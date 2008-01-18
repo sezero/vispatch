@@ -1,7 +1,9 @@
 /* Switch Pal .h 1.0 */
 
 #include <stdio.h>
+#ifndef _UNIX_
 #include <io.h>
+#endif
 #include <stdlib.h>
 #include <string.h>
 

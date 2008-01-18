@@ -1,0 +1,91 @@
+VisPatch 1.2
+
+simple:
+VisPatch file.pak or file.bsp (wildcards ok) -extract
+that retrieves all data nessisary for vis updates.
+
+VisPatch file.xxx -new:
+for bsps:
+makes bakups of the old bsps as file.bak.
+It will only patch bsp's that it has data for and skips those that it does not.
+for Paks:
+Puts all levels into one pak file that is incrementally higher than
+your last one.
+
+"Vispatch file.xxx" replaces the file.
+"vispatch file.xxx -extract" retrives all the vis data from the current file.
+"vispatch file.xxx -data some.dat" uses some.dat instead of vispatch.dat.
+"vispatch file.xxx -data some.dat -extract" puts data into some.dat instead of vispatch.dat.
+
+List of parameters:
+
+-extract puts the vis data into a data file.
+-dir     specifies the directory the level files are in.
+-data    specifies the vis data file (no wildcards)
+-new     puts the modifies levels into a new pak file if they were in a pak
+         file.  Renames the unmodified bsp files to name.bak and saves it as
+         the original name.
+
+Revision history:
+Version 1.2:
+    Fixed the NT file loop by using the archive attribute.
+      It simply removes the attribute on the files then checks
+      the files for the attribute before processing them.  If
+      they have the attribute, then they aren't the originals and
+      we are done with it.
+    Now Dumps you out and cleans up when out of disk space.
+
+Version 1.1:
+    Now doesn't put unmodified levels in paks and do anything to unmodified
+      BSP's.
+    Note:  I didn't want this released because I had already finished and
+    sent Ken 1.2 when it was released.  Ugh.
+
+Version 1.0b:
+    Added -dir for Ken's install batch program.
+    Added -data for Ken's install batch program.
+
+Version 1.0a:
+    Minor bug fixes.(ie I forgot.)
+
+Version 1.0:
+    And there was light (on the other side of the water.)
+
+Installation:
+
+If you just want to patch your data, just use the batch files Ken made.
+If you use VisPatch without it,
+"Vispatch" all by it's lonesome will update all the pak?.pak files in the
+current directory with the vispatch.dat file in the directory.
+
+If you want to make your own patches to use Ken's program use this format:
+
+Files:
+MyPatch.vis  Actual data.  -data MyPatch.vis
+MyPatch.dat  4 line description of your patch.
+
+Probably a text file saying how to get this program.
+
+If you want to merge two data sets, just do
+"copy /b file1.ext+file2.ext newfile.ext"
+I chose the file format for that reason. (I was expecting about 20 sources
+for all ID's levels alone and needed a good way to combine them.)
+
+Andy Bay
+ABay@teir.com
+
+Credits:
+
+Ken Alverson - The neat WQBSP he made, and organizing the data collection for this.
+Alex Moon - Making a BSP2Prt file making the fastest available vis tables.
+ID - Making such cool games.
+DeathDealer -  Being such a sport about Water Transperency.
+    http://www.allgames.com/quake/
+Razor - The other cool place to get this.
+    http://razor.stomped.com/water/
+WaterVIS - Another cool place to get this
+    http://www.sod.net/vis/
+CDROM.COM:
+    ftp://ftp.cdrom.com/pub/quake/utils/bsp_pak_tools/
+
+All our Data donators. (Ken listed them.)

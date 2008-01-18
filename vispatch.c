@@ -1,7 +1,16 @@
+#ifdef _UNIX_
+#include "swchpal.h"
+#include "linux.h"
+#else
 #include "Swchpal.h"
+#endif
+
+#ifndef _UNIX_
 #include <fltenv.h>
 #include <fltpnt.h>
 #include <dos.h>
+#endif
+
 typedef struct visdat_t{
     char File[32];
     unsigned long len;
@@ -22,6 +31,15 @@ pakheader_t NewPak;
 pakentry_t NewPakEnt[2048];
 int NPcnt,numvis;
 
+#ifdef _UNIX_
+// Directory ptr for findfirst emulation
+DIR *dptr=0;
+struct dirent *de=0;
+struct FIND fe;
+regex_t rexp;
+char lx_Path[256], lx_File[256];
+#endif
+
 int mode = 0,cnt,usepak=0;
 char FinBSP[256]="*.BSP", PinPAK[256]="PAK*.PAK", VIS[256]="VisPatch.dat", FoutBSP[256] = "", FoutPak[256] = "Pak*.Pak";
 char File[256]="Pak*.Pak",CurName[38],Path[256]="",Path2[256],TempFile[256]="~vistmp.tmp";
@@ -30,8 +48,168 @@ struct FIND *entry;
 char *path;
 long vispos, pakpos;
 
+#ifdef _UNIX_
+
+// This code mainly makes use of Posix compliant calls so
+// it should compile under most Unix platforms
+
+int fcloseall()
+{
+  fclose(InFile);
+  fclose(OutFile);
+  fclose(fVIS);
+}
+
+char *strlwr(char *string)
+{
+char *p=string;
+
+  while(*p) *p++ = (char) tolower(*p);
+  return(string);
+}
+
+char *strrev(char *string)
+{
+char *p=string;
+char swap;
+int i = strlen(string)-1;
+
+  while(p < (string+i)) {
+   swap = *(string+i);
+   *(string+i) = *p;
+   *p = swap;
+   i--;
+   p++;
+ }
+ return(string);
+}
+
+
+int strcmpi(char *a, char *b)
+{
+  //printf("Comparing %s and %s\n", a, b);
+  return(strcasecmp(a,b));
+}
+
+struct FIND *findnext( void )
+{
+static FIND fe;
+char fnBuffer[256];
+struct stat status;
+
+  de = readdir( dptr );
+  if(de == NULL) return( (struct FIND *) NULL );
+
+  // If doesn't match, return next match
+  if(regexec(&rexp, de->d_name, 0, 0, 0)) {
+   //printf("%s did not match %s\n", de->d_name, lx_File);
+   return(findnext());
+  }
+
+  strcpy(fe.name, de->d_name);
+  strcpy(fnBuffer, lx_Path);
+  strcat(fnBuffer, "/");
+  strcat(fnBuffer, fe.name);
+  stat( fnBuffer, &status );
+  // Filemodes mapped to attributes
+  fe.attribute = status.st_mode;
+  // Only return files!
+  if(S_ISREG(status.st_mode)) {
+    //printf("Returning %s\n", fe.name);
+    return(&fe);
+  }
+  else
+    return(findnext());
+
+}
+
+
+int filesize(char *filename)
+{
+struct stat status;
+
+  if(stat(filename, &status)==-1) return(-1);
+
+  return(status.st_size);
+}
+
+// Converts file wildcards to regexp string
+char *build_regexp(char *string)
+{
+char *p = string;
+char *pos;
+static char newstring[512];
+char tempstr[512];
+
+  p = newstring;
+  strcpy(newstring, string);
+  // First pass: comment any regexp special characters
+  while((pos = strpbrk(p, ".+[]()|\\^$")) != NULL) {
+   strcpy(tempstr, pos);
+   *pos = '\\';
+   *(pos+1) = 0;
+   strcat(p, tempstr);
+   p = pos+2;
+  }
+
+  // Then build regexp for ? and *
+  p = newstring;
+  while((pos = strpbrk(p, "?*")) != NULL) {
+   strcpy(tempstr, pos);
+   *pos = '.';
+   *(pos+1) = 0;
+   strcat(p, tempstr);
+   p = pos+2;
+  }
+
+  //printf("\nWildcard String = %s  RegExp String = %s\n", string, newstring);
+  return(newstring);
+}
+
+
+struct FIND *findfirst(char *path, int unknown)
+{
+char *p;
+  
+  // Free Static data on second pass
+  if(dptr) {
+	closedir(dptr);
+  	regfree(&rexp);
+  }
+
+  p = strrchr(path, '/'); 
+  if(!p) {
+   //printf("No // in filename\n");
+   return(NULL);
+  }
+
+  *p++=0;
+  strcpy(lx_Path, path);
+  strcpy(lx_File, p);
+  *(p-1) = '/';
+
+  dptr = opendir(lx_Path);
+  if(!dptr) {
+   //printf("Bad Dptr: %s\n");
+   return(NULL);
+  }
+
+  // Compile the regular expression matcher
+  regcomp( &rexp, build_regexp(lx_File), REG_EXTENDED | REG_ICASE | REG_NOSUB);
+
+  return(findnext());
+}
+
+int _dos_setfileattr(char *filename, mode_t attributes)
+{
+  chmod(filename, attributes);
+}
+
+#endif
+
+
 int main(int argc,char **argv){
-    printf("Vis Patch v1.2 by Andy Bay (ABay@Teir.Com)\n");
+    printf("Vis Patch v1.2a by Andy Bay (ABay@Teir.Com)\n");
     int tmp;
     if (argc>1)
         for (tmp=1;tmp<argc;tmp++){
@@ -50,6 +228,9 @@ int main(int argc,char **argv){
                     argv[tmp][0]=0;
                     strcpy(Path,argv[++tmp]);
                     argv[tmp][0]=0;
+#ifdef _UNIX_
+		    if(Path[strlen(Path)-1] != '/') strcat(Path, "/");
+#endif
                     printf("The pak/bsp directory is %s.\n",Path);
                 }
 
@@ -93,7 +274,7 @@ int main(int argc,char **argv){
             strcpy(Path2,Path);
             strcat(Path2,File);
             if(entry->attribute&_A_ARCH){
-                //printf("%s",Path2);
+                printf("%s",Path2);
                 entry->attribute = entry->attribute - _A_ARCH;
                 _dos_setfileattr(Path2,entry->attribute);
             }
@@ -327,12 +508,12 @@ int BSPFix(unsigned long InitOFFS){
     int good=0;
     here = ftell(OutFile);
     bspheader.visilist.offset = ftell(OutFile)-NewPakEnt[NPcnt].offset;
-    //("%s %s %i\n",VisName,CurName,good);
+    //printf("%s %s %i\n",VisName,CurName,good);
     for(tmp = 0;tmp<numvis;tmp++){
         ////("%s  ",
         if(!strcmpi(visdat[tmp].File,VisName)){
             good = 1;
-            //("Name: %s Size: %i %i\n",VisName,visdat[tmp].vislen,tmp);
+            printf("Name: %s Size: %i %i\n",VisName,visdat[tmp].vislen,tmp);
             fseek(OutFile,here,SEEK_SET);
             bspheader.visilist.size = visdat[tmp].vislen;
             test = fwrite(visdat[tmp].visdata,bspheader.visilist.size,1,OutFile);
