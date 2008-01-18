@@ -1,31 +1,39 @@
-VisPatch 1.4.3
-------------------------------
+
+VisPatch, version 1.4.3
+
+-----------------------------------------------------------------
+
 A WaterVIS utility for glquake
 
+http://vispatch.sourceforge.net/
+http://sourceforge.net/projects/vispatch/
 
-VisPatch is tool for patching the quake map files for water
-transparency in glquake. Original quake didn't have their
-maps water-vis'ed, so people did that by themselves and
-prepared patch data files. This tool is used for preparing
-and applying those patch files.
+-----------------------------------------------------------------
 
-At the time this tool was written, re-vis'ing maps took a
-lot of time, but applying a vispatch took less than minutes,
-so this was a necessity. Even today, if people don't want
-going into a 'complex' job of vising, this tool comes as a
-great convenience because there are a lot of vispatch data
-files around.
+VisPatch is a tool for patching the quake map files for water
+transparency in glquake. Original quake didn't have their maps
+water-vis'ed, so people did that by themselves and prepared
+patch data files. This tool is used for preparing and applying
+those patch files.
 
-This is a revised version of Andy Bay's 1.2a source code for
-unix and windows, fixing a lot of compilation issues, crashes
-and a few other bugs.
+At the time this tool was written, re-vis'ing maps took a lot of
+time, but applying a vispatch took less than minutes, so this was
+a necessity.  Even today, if people don't want going into a
+'complex' job of vising, this tool comes as a great convenience
+because there are a lot of vispatch data files around.
 
-The (latest) website for vispatch is:
+This is a revised version of Andy Bay's 1.2a source code for unix
+(linux, freebsd, ...), as well as windows.  It fixes a number of
+compilation issues, crashes and some other bugs, and adds support
+for big endian systems.  The source code is licensed under GPLv2,
+and is maintained here with portability in mind.
+
+Homepage of Andy Bay, the original author, is at:
+  http://www.imarvintpa.com/
+The (latest) website for WaterVIS is:
   http://www.inside3d.com/qip/vispatch/
 The patch data files are located at:
-  http://www.3ddownloads.com/telefragged/inside3d/qip/watervis
-Homepage of Andy Bay (the original author) is at:
-  http://www.imarvintpa.com
+  http://www.atomicgamer.com/directory.php?id=3138
 
 
 Usage: vispatch <file> [arguments]
@@ -93,6 +101,9 @@ COPYRIGHT
 
   VisPatch is free software;  you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published
-  by the Free  Software  Foundation; either version 2, or (at your
-  option) any later version.
+  by the Free Software Foundation;  either version 2, or (at your
+  option) any later version.  See the accompanying COPYING file for
+  details.
+
+  $Id: vispatch.txt,v 1.3 2008-01-18 12:00:59 sezero Exp $
 
