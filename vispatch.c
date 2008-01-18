@@ -1,6 +1,10 @@
 /*
+ * VisPatch :  Quake level patcher for water visibility.
+ *
  * Copyright (C) 1997-2006  Andy Bay <IMarvinTPA@bigfoot.com>
- * Copyright (C) 2006  O. Sezer <sezero@users.sourceforge.net>
+ * Copyright (C) 2006-2007  O. Sezer <sezero@users.sourceforge.net>
+ *
+ * $Id: vispatch.c,v 1.4 2008-01-18 09:57:01 sezero Exp $
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -21,41 +25,23 @@
  * Boston, MA  02110-1301  USA
 */
 
-/*
- * VisPatch :  Quake level patcher for water visibility.
- *
- * Compiling for Linux / Unix :
- * gcc -DPLATFORM_UNIX -Wall -Wshadow -o vispatch vispatch.c
- *
- * Compiling for Windows:
- * If cross-compiling on linux, use the included build_win.sh
- * script. If compiling on native windows, then:
- * gcc -Wall -Wshadow -mconsole -o vispatch.exe vispatch.c
- *
- */
-
+#include "arch_def.h"
+#include "compiler.h"
+#include "q_stdinc.h"
+#include "q_endian.h"
+#include "utilslib.h"
 #include "vispatch.h"
-#include <sys/stat.h>
-#if defined(_WIN32)
-#include <io.h>
-#endif
-#if defined(PLATFORM_UNIX)
-#include <unistd.h>
-#include <dirent.h>
-#include <fnmatch.h>
-#endif
 
+static visdat_t		*visdat;
+static pakentry_t	NewPakEnt[MAX_FILES_IN_PACK];
+static unsigned int	NPcnt, numvis;
+static int		usepak = 0;
+static int		mode = 0;	/* 0: patch, 2: patch without overwriting, 1: extract	*/
 
-visdat_t	*visdat;
-pakentry_t	NewPakEnt[MAX_FILES_IN_PACK];
-unsigned int	NPcnt, numvis;
-int		usepak = 0;
-int		mode = 0;	/* 0: patch, 2: patch without overwriting, 1: extract	*/
-
-FILE		*InFile, *OutFile, *fVIS;
+static FILE	*InFile, *OutFile, *fVIS;
 
 #define		TEMP_FILE_NAME		"~vistmp.tmp"
-char		Path[256],	/* where we shall work: getcwd(), changed by -dir	*/
+static char	Path[256],	/* where we shall work: getcwd(), changed by -dir	*/
 		Path2[256],	/* temporary filename buffer				*/
 		TempFile[256],	/* name of our temporary file on disk			*/
 		VIS[256] = "vispatch.dat",	/* vis data filename. changed by -data	*/
@@ -64,7 +50,24 @@ char		Path[256],	/* where we shall work: getcwd(), changed by -dir	*/
 		CurName[VISPATCH_IDLEN+6];	/* name of the currently processed file	*/
 
 
-//============================================================================
+/*============================================================================*/
+
+/* Functions used for vis data loading: */
+static void loadvis (FILE *fp);
+static void freevis (void);
+
+/* Functions used for patching process: */
+static int BSPFix (int InitOFFS);
+static int PakFix (int Offset);
+static int OthrFix(int Offset, int Length);
+static int ChooseLevel(char *FileSpec, int Offset, int length);
+
+/* Functions used for extraction process: */
+static int PakNew (int Offset);
+static int BSPNew (int Offset);
+static int ChooseFile (char *FileSpec, int Offset, int length);
+
+/*============================================================================*/
 
 #define CLOSE_ALL {			\
 	if (InFile)			\
@@ -77,357 +80,21 @@ char		Path[256],	/* where we shall work: getcwd(), changed by -dir	*/
 
 
 #define FWRITE_ERROR {							\
-	printf("Errors during fwrite: Not enough disk space??\n");	\
 	CLOSE_ALL;							\
 	remove(TempFile);						\
 	freevis();							\
-	exit (2);							\
+	Error("Errors during fwrite: Not enough disk space?");		\
 }
 
 
-//============================================================================
+/*============================================================================*/
 
-#include "strlcat.c"
-#include "strlcpy.c"
-
-#if HAVE_STRLCAT && HAVE_STRLCPY
-// use native library functions
-#define strlcat_	strlcat
-#define strlcpy_	strlcpy
-#endif
-
-
-//============================================================================
-
-#ifdef _WIN32
-
-#define strlwr_(a)		strlwr((a))
-#define strrev_(a)		strrev((a))
-#define strcasecmp_(a,b)	strcmpi((a),(b))
-
-/* From MinGW runtime/init.c :
- * [...] GetMainArgs (used below) takes a fourth argument
- * which is an int that controls the globbing of the command line. If
- * _CRT_glob is non-zero the command line will be globbed (e.g. *.*
- * expanded to be all files in the startup directory). In the mingw32
- * library a _CRT_glob variable is defined as being -1, enabling
- * this command line globbing by default. To turn it off and do all
- * command line processing yourself (and possibly escape bogons in
- * MS's globbing code) include a line in one of your source modules
- * defining _CRT_glob and setting it to zero, like this:
- *  int _CRT_glob = 0;
- */
-int	_CRT_glob = 0;
-
-static long	findhandle;
-static struct _finddata_t	finddata;
-
-char *Sys_FindNextFile (void)
-{
-	int		retval;
-
-	if (!findhandle || findhandle == -1)
-		return NULL;
-
-	retval = _findnext (findhandle, &finddata);
-	while (retval != -1)
-	{
-		if (finddata.attrib & _A_SUBDIR)
-		{
-			retval = _findnext (findhandle, &finddata);
-			continue;
-		}
-
-		return finddata.name;
-	}
-
-	return NULL;
-}
-
-char *Sys_FindFirstFile (char *path, char *pattern)
-{
-	char	tmp_buf[256];
-
-	if (findhandle)
-	{
-		printf("Error: Sys_FindFirst without FindClose\n");
-		exit (2);
-	}
-
-	snprintf (tmp_buf, sizeof(tmp_buf), "%s%s", path, pattern);
-	findhandle = _findfirst (tmp_buf, &finddata);
-
-	if (findhandle != -1)
-	{
-		if (finddata.attrib & _A_SUBDIR)
-			return Sys_FindNextFile();
-		else
-			return finddata.name;
-	}
-
-	return NULL;
-}
-
-void Sys_FindClose (void)
-{
-	if (findhandle != -1)
-		_findclose (findhandle);
-	findhandle = 0;
-}
-
-int Sys_filesize (char *filename)
-{
-	struct stat status;
-
-	if (stat(filename, &status) != 0)
-		return(-1);
-
-	return(status.st_size);
-}
-
-int Sys_getcwd (char *buf, size_t size)
-{
-	if ( !( _getcwd(buf, size) ) )
-		return 1;
-
-	return ( strlcat_(buf, "\\", size) >= size );
-}
-
-
-#endif	// _WIN32
-
-
-//============================================================================
-
-#ifdef PLATFORM_UNIX
-
-#define strcasecmp_(a,b)	strcasecmp((a),(b))
-
-char *strlwr_ (char *str)
-{
-	char	*c;
-	c = str;
-	while (*c)
-	{
-		*c = tolower(*c);
-		c++;
-	}
-	return str;
-}
-
-char *strrev_ (char *s)
-{
-	char a, *b, *e;
-
-	b = e = s;
-
-	while (*e)
-		e++;
-	e--;
-
-	while ( b < e )
-	{
-		a = *b;
-		*b = *e;
-		*e = a;
-		b++;
-		e--;
-	}
-	return s;
-}
-
-
-static DIR		*finddir;
-static struct dirent	*finddata;
-static char		*findpath, *findpattern;
-static char		matchpath[256];
-
-char *Sys_FindNextFile (void)
-{
-	struct stat	test;
-
-	if (!finddir)
-		return NULL;
-
-	do {
-		finddata = readdir(finddir);
-		if (finddata != NULL)
-		{
-			if (!fnmatch (findpattern, finddata->d_name, FNM_PATHNAME))
-			{
-				snprintf(matchpath, sizeof(matchpath), "%s/%s", findpath, finddata->d_name);
-				if ( (stat(matchpath, &test) == 0)
-							&& S_ISREG(test.st_mode) )
-					return finddata->d_name;
-			}
-		}
-	} while (finddata != NULL);
-
-	return NULL;
-}
-
-char *Sys_FindFirstFile (char *path, char *pattern)
-{
-	size_t	tmp_len;
-
-	if (finddir)
-	{
-		printf("Error: Sys_FindFirst without FindClose\n");
-		exit (2);
-	}
-
-	finddir = opendir (path);
-	if (!finddir)
-		return NULL;
-
-	tmp_len = strlen (pattern);
-	findpattern = (char *) malloc (tmp_len + 1);
-	if (!findpattern)
-		return NULL;
-//	strcpy (findpattern, pattern);
-	memcpy (findpattern, pattern, tmp_len);
-	findpattern[tmp_len] = '\0';
-	tmp_len = strlen (path);
-	findpath = (char *) malloc (tmp_len + 1);
-	if (!findpath)
-		return NULL;
-//	strcpy (findpath, path);
-	memcpy (findpath, path, tmp_len);
-	findpath[tmp_len] = '\0';
-	if (findpath[tmp_len-1] == '/' || findpath[tmp_len-1] == '\\')
-		findpath[tmp_len-1] = '\0';
-
-	return Sys_FindNextFile();
-}
-
-void Sys_FindClose (void)
-{
-	if (finddir != NULL)
-		closedir(finddir);
-	if (findpath != NULL)
-		free (findpath);
-	if (findpattern != NULL)
-		free (findpattern);
-	finddir = NULL;
-	findpath = NULL;
-	findpattern = NULL;
-}
-
-int Sys_filesize (char *filename)
-{
-	struct stat status;
-
-	if (stat(filename, &status) == -1)
-		return(-1);
-
-	return(status.st_size);
-}
-
-int Sys_getcwd (char *buf, size_t size)
-{
-	if ( !( getcwd(buf, size) ) )
-		return 1;
-
-	return ( strlcat_(buf, "/", size) >= size );
-}
-
-#endif	// PLATFORM_UNIX
-
-
-//============================================================================
-
-short ShortSwap (short l)
-{
-	unsigned char	b1, b2;
-
-	b1 = l&255;
-	b2 = (l>>8)&255;
-
-	return (b1<<8) + b2;
-}
-
-int LongSwap (int l)
-{
-	unsigned char	b1, b2, b3, b4;
-
-	b1 = l&255;
-	b2 = (l>>8)&255;
-	b3 = (l>>16)&255;
-	b4 = (l>>24)&255;
-
-	return ((int)b1<<24) + ((int)b2<<16) + ((int)b3<<8) + b4;
-}
-
-float FloatSwap (float f)
-{
-	union
-	{
-		float	f;
-		unsigned char	b[4];
-	} dat1, dat2;
-
-	dat1.f = f;
-	dat2.b[0] = dat1.b[3];
-	dat2.b[1] = dat1.b[2];
-	dat2.b[2] = dat1.b[1];
-	dat2.b[3] = dat1.b[0];
-	return dat2.f;
-}
-
-// endianness stuff: <sys/types.h> is supposed
-// to succeed in locating the correct endian.h
-// this BSD style may not work everywhere, eg. on WIN32
-#if !defined(BYTE_ORDER) || !defined(LITTLE_ENDIAN) || !defined(BIG_ENDIAN) || (BYTE_ORDER != LITTLE_ENDIAN && BYTE_ORDER != BIG_ENDIAN)
-#undef BYTE_ORDER
-#undef LITTLE_ENDIAN
-#undef BIG_ENDIAN
-#define LITTLE_ENDIAN 1234
-#define BIG_ENDIAN 4321
-#endif
-// assumptions in case we don't have endianness info
-#ifndef BYTE_ORDER
-#if defined(_WIN32)
-#define BYTE_ORDER LITTLE_ENDIAN
-#else
-#if defined(__sun)
-#if defined(__i386) || defined(__amd64)
-#define BYTE_ORDER LITTLE_ENDIAN
-#else
-#define BYTE_ORDER BIG_ENDIAN
-#endif
-#else
-#define BYTE_ORDER LITTLE_ENDIAN
-#warning "Unable to determine CPU endianess. Defaulting to little endian"
-#endif
-#endif
-#endif
-
-#if BYTE_ORDER == BIG_ENDIAN
-#define BigShort(s) (s)
-#define LittleShort(s) ShortSwap((s))
-#define BigLong(l) (l)
-#define LittleLong(l) LongSwap((l))
-#define BigFloat(f) (f)
-#define LittleFloat(f) FloatSwap((f))
-#else
-// BYTE_ORDER == LITTLE_ENDIAN
-#define BigShort(s) ShortSwap((s))
-#define LittleShort(s) (s)
-#define BigLong(l) LongSwap((l))
-#define LittleLong(l) (l)
-#define BigFloat(f) FloatSwap((f))
-#define LittleFloat(f) (f)
-#endif
-
-// end of endianness stuff
-
-
-//============================================================================
-
-void usage (void)
+static void usage (void)
 {
 	printf("Usage: vispatch <file> [arguments]\n\n");
-//	printf(" -h, -help  or  --help : Prints this message.\n\n");
+/*
+	printf(" -h, -help  or  --help : Prints this message.\n\n");
+*/
 	printf("<file> : Level filename pattern, bsp or pak type, wildcards\n");
 	printf("\t are allowed, relative paths not allowed. See the\n");
 	printf("\t examples.\n\n");
@@ -471,21 +138,42 @@ void usage (void)
 }
 
 
-//============================================================================
+/*============================================================================*/
+
+#if defined(PLATFORM_WINDOWS)
+
+/* From MinGW runtime/init.c :
+ * [...] GetMainArgs (used below) takes a fourth argument
+ * which is an int that controls the globbing of the command line. If
+ * _CRT_glob is non-zero the command line will be globbed (e.g. *.*
+ * expanded to be all files in the startup directory). In the mingw32
+ * library a _CRT_glob variable is defined as being -1, enabling
+ * this command line globbing by default. To turn it off and do all
+ * command line processing yourself (and possibly escape bogons in
+ * MS's globbing code) include a line in one of your source modules
+ * defining _CRT_glob and setting it to zero, like this:
+ *  int _CRT_glob = 0;
+ */
+int	_CRT_glob = 0;
+
+#endif	/* PLATFORM_WINDOWS */
+
 
 int main (int argc, char **argv)
 {
 	int	ret = 0, tmp;
 	char	*testname;
 
-	printf("VisPatch %s by Andy Bay\n", VERS);
+	printf("VisPatch %d.%d.%d by Andy Bay\n", VP_VER_MAJ, VP_VER_MID, VP_VER_MIN);
 	printf("Revised and fixed by O.Sezer\n");
+
+	ValidateByteorder ();
 
 	if (argc > 1)
 	{
 		for (tmp = 1; tmp < argc; tmp++)
 		{
-			strlwr_(argv[tmp]);
+			q_strlwr(argv[tmp]);
 			if (strcmp(argv[tmp], "-?"    ) == 0 ||
 			    strcmp(argv[tmp], "-h"    ) == 0 ||
 			    strcmp(argv[tmp], "-help" ) == 0 ||
@@ -495,10 +183,7 @@ int main (int argc, char **argv)
 	}
 
 	if ( Sys_getcwd(Path,sizeof(Path)) != 0)
-	{
-		printf("Unable to determine current working directory\n");
-		exit (2);
-	}
+		Error ("Unable to determine current working directory");
 	printf("Current directory: %s\n", Path);
 
 	if (argc > 1)
@@ -514,61 +199,38 @@ int main (int argc, char **argv)
 				{
 					argv[tmp][0] = 0;
 					if (++tmp == argc)
-					{
-						printf("You must specify the filename of visdata after -data\n");
-						exit (1);
-					}
-					strlcpy_ (VIS, argv[tmp], sizeof(VIS));
+						Error ("You must specify the filename of visdata after -data");
+					q_strlcpy (VIS, argv[tmp], sizeof(VIS));
 					argv[tmp][0] = 0;
 				}
 				else if (strcmp(argv[tmp],"-dir") == 0)
 				{
 					argv[tmp][0] = 0;
 					if (++tmp == argc)
-					{
-						printf("You must specify a directory name after -dir\n");
-						exit (1);
-					}
-					strlcpy_ (Path, argv[tmp], sizeof(Path)-1);
-					// -2 : reserve space for a trailing dir separator
-					Path[sizeof(Path)-2] = 0;
+						Error ("You must specify a directory name after -dir");
+					q_strlcpy (Path, argv[tmp], sizeof(Path) - 1);
+					Path[sizeof(Path) - 1] = 0;
 					argv[tmp][0] = 0;
 					printf("Will look into %s as the pak/bsp directory..\n", Path);
-#	ifdef PLATFORM_UNIX
-					// include the path separator at the end
-					if (Path[strlen(Path)-1] != '/')
-						strlcat_ (Path, "/", sizeof(Path));
-#	endif
-#	ifdef _WIN32
-					// include the path separator at the end
-					if (Path[strlen(Path)-1] != '\\')
-						strlcat_ (Path, "\\", sizeof(Path));
-#	endif
 				}
 				else if (strcmp(argv[tmp],"-extract") == 0)
 				{
 					if (mode == 2)
-					{
-						printf("-extract and -new cannot be used together\n");
-						exit (1);
-					}
+						Error ("-extract and -new cannot be used together");
 					mode = 1;
 					argv[tmp][0] = 0;
 				}
 				else if (strcmp(argv[tmp],"-new") == 0)
 				{
 					if (mode == 1)
-					{
-						printf("-extract and -new cannot be used together\n");
-						exit (1);
-					}
+						Error ("-extract and -new cannot be used together");
 					mode = 2;
 					argv[tmp][0] = 0;
 				}
 			}
 			else
 			{
-				strlcpy_ (File, argv[tmp], sizeof(File));
+				q_strlcpy (File, argv[tmp], sizeof(File));
 			}
 		}
 	}
@@ -589,62 +251,54 @@ int main (int argc, char **argv)
 			testname = Sys_FindNextFile();
 		}
 		Sys_FindClose();
-		snprintf(FoutPak, sizeof(FoutPak), "%spak%i.pak", Path, tmp);
+		q_snprintf(FoutPak, sizeof(FoutPak), "%s/pak%i.pak", Path, tmp);
 		printf("The new pak file will be called %s.\n", FoutPak);
 	}
 
-	snprintf(TempFile, sizeof(TempFile), "%s%s", Path, TEMP_FILE_NAME);
+	q_snprintf(TempFile, sizeof(TempFile), "%s/%s", Path, TEMP_FILE_NAME);
 //	printf("%s", TempFile);
 
-	if (mode == 0 || mode == 2)	// we are patching
+	if (mode == 0 || mode == 2)	/* we are patching */
 	{
 		int chk = 0;
 
 		fVIS = fopen(VIS, "rb");
 		if (!fVIS)
-		{
-			printf("couldn't find the vis source file.\n");
-			exit (2);
-		}
+			Error ("couldn't find the vis source file.");
 
 		loadvis(fVIS);
 
 		OutFile = fopen(TempFile, "w+b");
 		if (!OutFile)
-		{
-			printf("couldn't create an output file\n");
-			exit (2);
-		}
+			Error ("couldn't create an output file");
 
 		testname = Sys_FindFirstFile(Path, File);
 
 		while (testname != NULL)
 		{
-			strlcpy_ (File, testname, sizeof(File));
-
-			strlcpy_ (Path2, Path, sizeof(Path2));
-			strlcat_ (Path2, File, sizeof(Path2));
+			q_strlcpy (File, testname, sizeof(File));
+			q_snprintf(Path2, sizeof(Path2), "%s/%s", Path, File);
 
 			InFile = fopen(Path2, "rb");
 			if (!InFile)
-			{
-				printf("couldn't find the level file.\n");
-				exit (2);
-			}
+				Error ("couldn't find the level file.");
 
 			if (mode == 0)
 			{
-			// we may be working with multiple pak files,
-			// clean any garbage from the previous run.
+			/* we may be working with multiple pak files,
+			 * clean any garbage from the previous runs.
+			 */
 				memset(NewPakEnt, 0, MAX_FILES_IN_PACK * sizeof(pakentry_t));
 			}
 
 			chk = ChooseLevel(File, 0, 100000);
 
 			if (chk < 0)
+			{
 				FWRITE_ERROR;
+			}
 
-			if (mode == 0)		// patching with overwrite enabled
+			if (mode == 0)		/* patching with overwrite enabled */
 			{
 				NPcnt = 0;
 				fclose(OutFile);
@@ -659,53 +313,42 @@ int main (int argc, char **argv)
 
 				OutFile = fopen(TempFile, "w+b");
 				if (!OutFile)
-				{
-					printf("couldn't create an output file\n");
-					exit (2);
-				}
+					Error ("couldn't create an output file");
 			}
-			else if (usepak == 1)	// mode 2: writing into a new pakfile
+			else if (usepak == 1)	/* mode 2: writing into a new pakfile */
 			{
 				fclose(InFile);
 				InFile = NULL;
 			}
-			else if (chk > 0)	// mode 2: writing into new bsp files
+			else if (chk > 0)	/* mode 2: writing into new bsp files */
 			{
 			//	printf("%i\n", chk);
 				fclose(OutFile);
 				fclose(InFile);
 				InFile = NULL;
-				strlcpy_ (Path2, Path, sizeof(Path2));
-				strlcat_ (Path2, File, sizeof(Path2));
-				strlcpy_ (File, Path2, sizeof(File));
-				strrev_(File);
+				q_snprintf(Path2, sizeof(Path2), "%s/%s", Path, File);
+				q_strlcpy (File, Path2, sizeof(File));
+				q_strrev(File);
 				File[0] = 'k';
 				File[1] = 'a';
 				File[2] = 'b';
-				strrev_(File);
+				q_strrev(File);
 				remove(File);
-				strlcpy_ (Path2, Path, sizeof(Path2));
-				strlcat_ (Path2, CurName, sizeof(Path2));
+				q_snprintf(Path2, sizeof(Path2), "%s/%s", Path, CurName);
 				rename(Path2, File);
 				rename(TempFile, Path2);
 				OutFile = fopen(TempFile, "w+b");
 				if (!OutFile)
-				{
-					printf("couldn't create an output file\n");
-					exit (2);
-				}
+					Error ("couldn't create an output file");
 			}
-			else	// mode 2: ???
+			else	/* mode 2: ??? */
 			{
 				fclose(OutFile);
 				fclose(InFile);
 				InFile = NULL;
 				OutFile = fopen(TempFile, "w+b");
 				if (!OutFile)
-				{
-					printf("couldn't create an output file\n");
-					exit (2);
-				}
+					Error ("couldn't create an output file");
 			}
 
 			testname = Sys_FindNextFile();
@@ -720,7 +363,7 @@ int main (int argc, char **argv)
 		freevis();
 
 	}
-	else if (mode == 1)	// we are extracting
+	else if (mode == 1)	/* we are extracting */
 	{
 		if (Sys_filesize(VIS) == -1)
 			fVIS = fopen(VIS, "wb");
@@ -728,30 +371,25 @@ int main (int argc, char **argv)
 			fVIS = fopen(VIS, "r+b");
 
 		if (!fVIS)
-		{
-			printf("couldn't open the vis data file.\n");
-			exit (2);
-		}
+			Error ("couldn't open the vis data file.");
 
 		testname = Sys_FindFirstFile(Path, File);
 
 		while (testname != NULL)
 		{
-			strlcpy_ (File, testname, sizeof(File));
-			strlcpy_ (Path2, Path, sizeof(Path2));
-			strlcat_ (Path2, File, sizeof(Path2));
+			q_strlcpy (File, testname, sizeof(File));
+			q_snprintf(Path2, sizeof(Path2), "%s/%s", Path, File);
 
 			InFile = fopen(Path2, "r+b");
 			if (!InFile)
-			{
-				printf("couldn't find the level file.\n");
-				exit (2);
-			}
+				Error ("couldn't find the level file.");
 
 			ret = ChooseFile(File, 0, 0);
 
 			if (ret < 0)
+			{
 				FWRITE_ERROR;
+			}
 
 			testname = Sys_FindNextFile();
 		}
@@ -764,26 +402,27 @@ int main (int argc, char **argv)
 }
 
 
-//============================================================================
+/*============================================================================*/
 
-// Functions used for patching process:
-// ChooseLevel, PakFix, BspFix, OthrFix
+/* Functions used for patching process:
+ * ChooseLevel, PakFix, BspFix, OthrFix
+ */
 
-int ChooseLevel (char *FileSpec, int Offset, int length)
+static int ChooseLevel (char *FileSpec, int Offset, int length)
 {
 	int tmp = 0;
 
 //	printf("Looking at file %s %i %i.\n", FileSpec, length, mode);
-	if ( strstr(strlwr_(FileSpec),".pak") )
+	if ( strstr(q_strlwr(FileSpec),".pak") )
 	{
 		printf("Looking at file %s.\n", FileSpec);
 		usepak = 1;
 		tmp = PakFix(Offset);
 	}
-	else if (length > 50000 && strstr(strlwr_(FileSpec),".bsp"))
+	else if (length > 50000 && strstr(q_strlwr(FileSpec),".bsp"))
 	{
 		printf("Looking at file %s.\n", FileSpec);
-		strlcpy_ (CurName, FileSpec, sizeof(CurName));
+		q_strlcpy (CurName, FileSpec, sizeof(CurName));
 		tmp = BSPFix(Offset);
 	}
 	else if (mode == 0 && Offset > 0)
@@ -801,7 +440,7 @@ int ChooseLevel (char *FileSpec, int Offset, int length)
 	return tmp;
 }
 
-int PakFix (int Offset)
+static int PakFix (int Offset)
 {
 	pakheader_t	Pak;
 	pakentry_t	*PakEnt;
@@ -827,8 +466,8 @@ int PakFix (int Offset)
 	{
 		PakEnt[pakwalk].size = LittleLong(PakEnt[pakwalk].size);
 		PakEnt[pakwalk].offset = LittleLong(PakEnt[pakwalk].offset);
-		strlcpy_ (NewPakEnt[NPcnt].filename, PakEnt[pakwalk].filename, sizeof(NewPakEnt[0].filename));
-		strlcpy_ (CurName, PakEnt[pakwalk].filename, sizeof(CurName));
+		q_strlcpy (NewPakEnt[NPcnt].filename, PakEnt[pakwalk].filename, sizeof(NewPakEnt[0].filename));
+		q_strlcpy (CurName, PakEnt[pakwalk].filename, sizeof(CurName));
 
 		NewPakEnt[NPcnt].size = LittleLong(PakEnt[pakwalk].size);
 		ret = ChooseLevel(PakEnt[pakwalk].filename, Offset+PakEnt[pakwalk].offset, PakEnt[pakwalk].size);
@@ -870,7 +509,7 @@ int PakFix (int Offset)
 	return numentry;
 }
 
-int OthrFix (int Offset, int Length)
+static int OthrFix (int Offset, int Length)
 {
 	int		test;
 	void		*cpy;
@@ -889,7 +528,7 @@ int OthrFix (int Offset, int Length)
 	return 1;
 }
 
-int BSPFix (int InitOFFS)
+static int BSPFix (int InitOFFS)
 {
 	int		tmp, good;
 	size_t		test, count;
@@ -917,16 +556,16 @@ int BSPFix (int InitOFFS)
 	if (test == 0)
 		return -1;
 
-// swap the header
+/* swap the header */
 	for (count = 0 ; count < sizeof(dheader_t)/4 ; count++)
 		((int *)&bspheader)[count] = LittleLong ( ((int *)&bspheader)[count]);
 
-	strlcpy_ (VisName, CurName, sizeof(VisName));
-	strrev_ (VisName);
-	strlcat_ (VisName, "/", sizeof(VisName));
+	q_strlcpy (VisName, CurName, sizeof(VisName));
+	q_strrev (VisName);
+	q_strlcat (VisName, "/", sizeof(VisName));
 	count = strcspn(VisName, "\\/");
 	memset(VisName+count, 0, sizeof(VisName)-count);
-	strrev_ (VisName);
+	q_strrev (VisName);
 	good = 0;
 	here = ftell(OutFile);
 	bspheader.visilist.offset = ftell(OutFile) - LittleLong(NewPakEnt[NPcnt].offset);
@@ -934,10 +573,10 @@ int BSPFix (int InitOFFS)
 	for (count = 0; count < numvis; count++)
 	{
 		////("%s  ",
-		if (!strcasecmp_ (visdat[count].File, VisName))
+		if (!q_strcasecmp(visdat[count].File, VisName))
 		{
 			good = 1;
-			printf("Name: %s Size: %d %u\n", VisName, visdat[count].vislen, count);
+			printf("Name: %s Size: %d %lu\n", VisName, visdat[count].vislen, (unsigned long)count);
 			fseek(OutFile, here, SEEK_SET);
 			bspheader.visilist.size = visdat[count].vislen;
 			test = fwrite(visdat[count].visdata, bspheader.visilist.size, 1, OutFile);
@@ -964,10 +603,7 @@ int BSPFix (int InitOFFS)
 				char *cc;
 				tmp = LittleLong(NewPakEnt[NPcnt].size);
 				if (tmp < 0)
-				{
-					printf ("%s: Error: negative size\n", __FUNCTION__);
-					exit (3);
-				}
+					Error ("%s: Error: negative size!", __thisfunc__);
 				cc = (char *)malloc(tmp);
 				fread(cc, tmp, 1, InFile);
 				test = fwrite(cc, tmp, 1, OutFile);
@@ -1146,7 +782,7 @@ int BSPFix (int InitOFFS)
 //	printf("O: %i\n", here);
 	fflush(OutFile);
 
-// swap the header
+/* swap the header */
 	for (count = 0 ; count < sizeof(dheader_t)/4 ; count++)
 		((int *)&bspheader)[count] = LittleLong ( ((int *)&bspheader)[count]);
 
@@ -1164,32 +800,33 @@ int BSPFix (int InitOFFS)
 }
 
 
-//============================================================================
+/*============================================================================*/
 
-// Functions used for extraction process:
-// ChooseFile, PakNew, BspNew
+/* Functions used for extraction process:
+ * ChooseFile, PakNew, BspNew
+ */
 
-int ChooseFile (char *FileSpec, int Offset, int length)
+static int ChooseFile (char *FileSpec, int Offset, int length)
 {
 	int tmp = 0;
 
-	if (length == 0 && strstr(strlwr_(FileSpec),".pak"))
+	if (length == 0 && strstr(q_strlwr(FileSpec),".pak"))
 	{
 		printf("Looking at file %s.\n", FileSpec);
 		tmp = PakNew(Offset);
 	}
 
-	if (strstr(strlwr_(FileSpec),".bsp"))
+	if (strstr(q_strlwr(FileSpec),".bsp"))
 	{
 		printf("Looking at file %s.\n", FileSpec);
-		strlcpy_ (CurName, FileSpec, sizeof(CurName));
+		q_strlcpy (CurName, FileSpec, sizeof(CurName));
 		tmp = BSPNew(Offset);
 	}
 
 	return tmp;
 }
 
-int PakNew (int Offset)
+static int PakNew (int Offset)
 {
 	pakheader_t	Pak;
 	pakentry_t	*PakEnt;
@@ -1211,8 +848,8 @@ int PakNew (int Offset)
 		PakEnt[pakwalk].size = LittleLong(PakEnt[pakwalk].size);
 		PakEnt[pakwalk].offset = LittleLong(PakEnt[pakwalk].offset);
 
-		strlcpy_ (NewPakEnt[NPcnt].filename, PakEnt[pakwalk].filename, sizeof(NewPakEnt[0].filename));
-		strlcpy_ (CurName, PakEnt[pakwalk].filename, sizeof(CurName));
+		q_strlcpy (NewPakEnt[NPcnt].filename, PakEnt[pakwalk].filename, sizeof(NewPakEnt[0].filename));
+		q_strlcpy (CurName, PakEnt[pakwalk].filename, sizeof(CurName));
 
 		NewPakEnt[NPcnt].size = LittleLong(PakEnt[pakwalk].size);
 		ret = ChooseFile(PakEnt[pakwalk].filename, Offset+PakEnt[pakwalk].offset, PakEnt[pakwalk].size);
@@ -1228,7 +865,7 @@ int PakNew (int Offset)
 	return numentry;
 }
 
-int BSPNew (int InitOFFS)
+static int BSPNew (int InitOFFS)
 {
 	size_t		count, test;
 	int	tes, len;
@@ -1241,7 +878,7 @@ int BSPNew (int InitOFFS)
 	if (test == 0)
 		return 0;
 
-// swap the header
+/* swap the header */
 	for (count = 0 ; count < sizeof(dheader_t)/4 ; count++)
 		((int *)&bspheader)[count] = LittleLong ( ((int *)&bspheader)[count]);
 
@@ -1257,12 +894,12 @@ int BSPNew (int InitOFFS)
 		return 1;
 	}
 
-	strlcpy_ (VisName, CurName, sizeof(VisName));
-	strrev_ (VisName);
-	strlcat_ (VisName, "/", sizeof(VisName));
+	q_strlcpy (VisName, CurName, sizeof(VisName));
+	q_strrev (VisName);
+	q_strlcat (VisName, "/", sizeof(VisName));
 	count = strcspn(VisName, "/\\");
 	memset(VisName+count, 0, sizeof(VisName)-count);
-	strrev_ (VisName);
+	q_strrev (VisName);
 
 	cpy = (unsigned char *)malloc(bspheader.visilist.size);
 	fseek(InFile, InitOFFS+bspheader.visilist.offset, SEEK_SET);
@@ -1312,11 +949,11 @@ int BSPNew (int InitOFFS)
 }
 
 
-//============================================================================
+/*============================================================================*/
 
-// Functions used for vis data loading:
+/* Functions used for vis data loading: */
 
-void loadvis(FILE *fp)
+static void loadvis(FILE *fp)
 {
 	unsigned int	count = 0, tmp;
 	char		Name[VISPATCH_IDLEN];
@@ -1337,10 +974,7 @@ void loadvis(FILE *fp)
 
 	visdat = (visdat_t *)malloc(sizeof(visdat_t)*count);
 	if (visdat == 0)
-	{
-		printf("Ack, not enough memory!\n");
-		exit (2);
-	}
+		Error ("Not enough memory!");
 
 	fseek(fp, 0, SEEK_SET);
 
@@ -1355,9 +989,8 @@ void loadvis(FILE *fp)
 		visdat[tmp].visdata = (unsigned char *)malloc(visdat[tmp].vislen);
 		if (visdat[tmp].visdata == 0)
 		{
-			printf("Ack, not enough memory!\n");
 			free(visdat);
-			exit (2);
+			Error ("Not enough memory!");
 		}
 		fread(visdat[tmp].visdata, 1, visdat[tmp].vislen, fp);
 
@@ -1366,9 +999,8 @@ void loadvis(FILE *fp)
 		visdat[tmp].leafdata = (unsigned char *)malloc(visdat[tmp].leaflen);
 		if (visdat[tmp].leafdata == 0)
 		{
-			printf("Ack, not enough memory!\n");
 			free(visdat);
-			exit (2);
+			Error ("Not enough memory!");
 		}
 		fread(visdat[tmp].leafdata, 1, visdat[tmp].leaflen, fp);
 	}
@@ -1376,7 +1008,7 @@ void loadvis(FILE *fp)
 	numvis = count;
 }
 
-void freevis (void)
+static void freevis (void)
 {
 	unsigned int		tmp;
 

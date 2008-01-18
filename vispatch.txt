@@ -1,4 +1,4 @@
-VisPatch 1.4.2
+VisPatch 1.4.3
 ------------------------------
 A WaterVIS utility for glquake
 
@@ -89,7 +89,7 @@ vispatch -dir hipnotic -extract
 COPYRIGHT
 
   Copyright (C) 1997-2006  Andy Bay <IMarvinTPA@bigfoot.com>
-  Copyright (C) 2006  O.Sezer <sezero@users.sourceforge.net>
+  Copyright (C) 2006-2008  O.Sezer <sezero@users.sourceforge.net>
 
   VisPatch is free software;  you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published

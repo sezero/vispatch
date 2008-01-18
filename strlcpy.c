@@ -16,11 +16,10 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-/*
 #include <sys/types.h>
 #include <string.h>
-*/
 
+#include "arch_def.h"
 #include "strl_fn.h"
 
 /*
@@ -30,7 +29,7 @@
  */
 #if !HAVE_STRLCPY
 size_t
-strlcpy_ (char *dst, const char *src, size_t siz)
+q_strlcpy (char *dst, const char *src, size_t siz)
 {
 	char *d = dst;
 	const char *s = src;

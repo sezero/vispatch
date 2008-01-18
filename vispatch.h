@@ -1,6 +1,10 @@
 /*
+ * VisPatch :  Quake level patcher for water visibility.
+ *
  * Copyright (C) 1997-2006  Andy Bay <IMarvinTPA@bigfoot.com>
- * Copyright (C) 2006  O. Sezer <sezero@users.sourceforge.net>
+ * Copyright (C) 2006-2007  O. Sezer <sezero@users.sourceforge.net>
+ *
+ * $Id: vispatch.h,v 1.2 2008-01-18 09:57:01 sezero Exp $
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -21,13 +25,13 @@
  * Boston, MA  02110-1301  USA
 */
 
+#ifndef __QVISPATCH_H
+#define __QVISPATCH_H
 
-#include <sys/types.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <ctype.h>
-
+/* Version numbers */
+#define	VP_VER_MAJ	1
+#define	VP_VER_MID	4
+#define	VP_VER_MIN	3
 
 /* NOTE: We actually need int32_t, not int, as the types
    for sizes and offsets. If someone ever wants to compile
@@ -104,20 +108,5 @@ typedef struct
 } visdat_t;
 
 
-#define VERS "1.4.2"
-
-// Functions used for vis data loading:
-void loadvis (FILE *fp);
-void freevis (void);
-
-// Functions used for patching process:
-int BSPFix (int InitOFFS);
-int PakFix (int Offset);
-int OthrFix(int Offset, int Length);
-int ChooseLevel(char *FileSpec, int Offset, int length);
-
-// Functions used for extraction process:
-int PakNew (int Offset);
-int BSPNew (int Offset);
-int ChooseFile (char *FileSpec, int Offset, int length);
+#endif	/* __QVISPATCH_H */
 

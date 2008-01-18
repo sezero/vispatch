@@ -16,11 +16,10 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-/*
 #include <sys/types.h>
 #include <string.h>
-*/
 
+#include "arch_def.h"
 #include "strl_fn.h"
 
 /*
@@ -32,7 +31,7 @@
  */
 #if !HAVE_STRLCAT
 size_t
-strlcat_ (char *dst, const char *src, size_t siz)
+q_strlcat (char *dst, const char *src, size_t siz)
 {
 	char *d = dst;
 	const char *s = src;
