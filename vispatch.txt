@@ -10,11 +10,10 @@ http://sourceforge.net/projects/vispatch/
 
 -----------------------------------------------------------------
 
-VisPatch is a tool for patching the quake map files for water
-transparency in glquake. Original quake didn't have their maps
-water-vis'ed, so people did that by themselves and prepared
-patch data files. This tool is used for preparing and applying
-those patch files.
+VisPatch is a tool for patching quake maps for transparent water
+in glquake. Original quake didn't have their maps water-vis'ed,
+so people did that by themselves and prepared patch data files.
+This tool is used for preparing and applying those patch files.
 
 At the time this tool was written, re-vis'ing maps took a lot of
 time, but applying a vispatch took less than minutes, so this was
@@ -118,5 +117,5 @@ COPYRIGHT
   option) any later version.  See the accompanying COPYING file for
   details.
 
-  $Id: vispatch.txt,v 1.5 2008-01-19 09:40:07 sezero Exp $
+  $Id: vispatch.txt,v 1.6 2008-01-25 15:28:07 sezero Exp $
 
