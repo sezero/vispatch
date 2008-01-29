@@ -4,7 +4,7 @@
  * Copyright (C) 1997-2006  Andy Bay <IMarvinTPA@bigfoot.com>
  * Copyright (C) 2006-2007  O. Sezer <sezero@users.sourceforge.net>
  *
- * $Id: utilslib.c,v 1.1 2008-01-18 09:57:01 sezero Exp $
+ * $Id: utilslib.c,v 1.2 2008-01-29 18:00:10 sezero Exp $
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -293,19 +293,22 @@ char *Sys_FindFirstFile (const char *path, const char *pattern)
 		return NULL;
 
 	tmp_len = strlen (pattern);
-	findpattern = (char *) malloc (tmp_len + 1);
+	findpattern = (char *) calloc (tmp_len + 1, sizeof(char));
 	if (!findpattern)
 		return NULL;
 	strcpy (findpattern, pattern);
-	findpattern[tmp_len] = '\0';
 	tmp_len = strlen (path);
-	findpath = (char *) malloc (tmp_len + 1);
+	findpath = (char *) calloc (tmp_len + 1, sizeof(char));
 	if (!findpath)
 		return NULL;
 	strcpy (findpath, path);
-	findpath[tmp_len] = '\0';
-	if (findpath[tmp_len-1] == '/' || findpath[tmp_len-1] == '\\')
-		findpath[tmp_len-1] = '\0';
+	if (tmp_len)
+	{
+		--tmp_len;
+		/* searching / won't be a good idea, for example.. */
+		if (findpath[tmp_len] == '/' || findpath[tmp_len] == '\\')
+			findpath[tmp_len] = '\0';
+	}
 
 	return Sys_FindNextFile();
 }
