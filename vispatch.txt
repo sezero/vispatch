@@ -1,5 +1,5 @@
 
-VisPatch, version 1.4.3
+VisPatch, version 1.4.4
 
 -----------------------------------------------------------------
 
@@ -117,5 +117,5 @@ COPYRIGHT
   option) any later version.  See the accompanying COPYING file for
   details.
 
-  $Id: vispatch.txt,v 1.6 2008-01-25 15:28:07 sezero Exp $
+  $Id: vispatch.txt,v 1.7 2008-03-17 21:48:15 sezero Exp $
 
