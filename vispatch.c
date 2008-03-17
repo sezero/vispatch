@@ -4,7 +4,7 @@
  * Copyright (C) 1997-2006  Andy Bay <IMarvinTPA@bigfoot.com>
  * Copyright (C) 2006-2007  O. Sezer <sezero@users.sourceforge.net>
  *
- * $Id: vispatch.c,v 1.4 2008-01-18 09:57:01 sezero Exp $
+ * $Id: vispatch.c,v 1.5 2008-03-17 21:33:28 sezero Exp $
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -487,8 +487,7 @@ static int PakFix (int Offset)
 //	printf("PAK diroffset = %i, entries = %i\n", Pak.diroffset, NPcnt);
 	Pak.dirsize = NPcnt * sizeof(pakentry_t);
 	ugh = ftell(OutFile);
-// NewPakEnt is an array: pass either NewPakEnt itself or &NewPakEnt[0] to fwrite()
-//	test = fwrite(&NewPakEnt, sizeof(pakentry_t), NPcnt, OutFile);
+//	test = fwrite(&NewPakEnt[0], sizeof(pakentry_t), NPcnt, OutFile);
 	test = fwrite(NewPakEnt, sizeof(pakentry_t), NPcnt, OutFile);
 
 	if (test < NPcnt)
@@ -536,14 +535,13 @@ static int BSPFix (int InitOFFS)
 	dheader_t	bspheader;
 	unsigned char	*cpy;
 	char	VisName[VISPATCH_IDLEN+6];
+	char	pad[4] = { 0, 0, 0, 0 };
 
 	fflush(OutFile);
 	NewPakEnt[NPcnt].offset = LittleLong( ftell(OutFile) );
 	tmp = LittleLong(NewPakEnt[NPcnt].size);
 	if (tmp == 0)
 		NewPakEnt[NPcnt].size = LittleLong( Sys_filesize(File) );
-
-//	printf("Start: %i\n", LittleLong(NewPakEnt[NPcnt].offset));
 
 	fseek(InFile, InitOFFS, SEEK_SET);
 	test = fread(&bspheader, sizeof(dheader_t), 1, InFile);
@@ -567,28 +565,15 @@ static int BSPFix (int InitOFFS)
 	memset(VisName+count, 0, sizeof(VisName)-count);
 	q_strrev (VisName);
 	good = 0;
-	here = ftell(OutFile);
-	bspheader.visilist.offset = ftell(OutFile) - LittleLong(NewPakEnt[NPcnt].offset);
-//	printf("%s %s %i\n", VisName, CurName, good);
 	for (count = 0; count < numvis; count++)
 	{
-		////("%s  ",
 		if (!q_strcasecmp(visdat[count].File, VisName))
 		{
 			good = 1;
 			printf("Name: %s Size: %d %lu\n", VisName, visdat[count].vislen, (unsigned long)count);
-			fseek(OutFile, here, SEEK_SET);
 			bspheader.visilist.size = visdat[count].vislen;
-			test = fwrite(visdat[count].visdata, bspheader.visilist.size, 1, OutFile);
-			if (test == 0)
-				return -1;
-
-			fflush(OutFile);
 			bspheader.leaves.size	= visdat[count].leaflen;
-			bspheader.leaves.offset = ftell(OutFile)-LittleLong(NewPakEnt[NPcnt].offset);
-			test = fwrite(visdat[count].leafdata, bspheader.leaves.size, 1, OutFile);
-			if (test == 0)
-				return -1;
+			break;
 		}
 	}
 
@@ -618,27 +603,199 @@ static int BSPFix (int InitOFFS)
 				return 0;
 			}
 		}
-		else
-		{
-			return 0;	//Individual file and it doesn't matter.
-		}
+		/* else: Individual file and it doesn't matter. */
+		return 0;
+	}
 
-//	printf("not good\n");
-/*	cpy = (unsigned char *)malloc(bspheader.visilist.size);
-	fseek(InFile, InitOFFS+bspheader.visilist.offset, SEEK_SET);
-	fread(cpy, 1, bspheader.visilist.size, InFile);
-	fwrite(cpy, bspheader.visilist.size, 1, OutFile);
+/*	write the lumps not in the structrue order, but using the
+	bspfile.c::WriteBSPFile() order of iD Software. align the
+	offset at 4 bytes as in bspfile.c::AddLump()		*/
+
+	cpy = (unsigned char *)malloc(bspheader.planes.size);
+	fseek(InFile, InitOFFS+bspheader.planes.offset, SEEK_SET);
+	fread(cpy, 1, bspheader.planes.size, InFile);
+	bspheader.planes.offset = ftell(OutFile)-LittleLong(NewPakEnt[NPcnt].offset);
+	test = fwrite(cpy, bspheader.planes.size, 1, OutFile);
 	free(cpy);
+	if (test == 0)
+		return -1;
+	tmp = (bspheader.planes.size + 3) & ~3;
+	if (tmp > bspheader.planes.size)
+	{
+		tmp -= bspheader.planes.size;
+		fwrite(pad, tmp, 1, OutFile);
+	}
 
-	cpy = (unsigned char *)malloc(bspheader.leaves.size);
-	fseek(InFile, InitOFFS+bspheader.leaves.offset, SEEK_SET);
-	fread(cpy, 1, bspheader.leaves.size, InFile);
 	bspheader.leaves.offset = ftell(OutFile)-LittleLong(NewPakEnt[NPcnt].offset);
-	fwrite(cpy, bspheader.leaves.size, 1, OutFile);
-	free(cpy);
-*/
-//	printf("K: %i\n", ftell(OutFile));
+	test = fwrite(visdat[count].leafdata, bspheader.leaves.size, 1, OutFile);
+	if (test == 0)
+		return -1;
+	tmp = (bspheader.leaves.size + 3) & ~3;
+	if (tmp > bspheader.leaves.size)
+	{
+		tmp -= bspheader.leaves.size;
+		fwrite(pad, tmp, 1, OutFile);
+	}
 
+	cpy = (unsigned char *)malloc(bspheader.vertices.size);
+	fseek(InFile, InitOFFS+bspheader.vertices.offset, SEEK_SET);
+	fread(cpy, 1, bspheader.vertices.size, InFile);
+	bspheader.vertices.offset = ftell(OutFile)-LittleLong(NewPakEnt[NPcnt].offset);
+	test = fwrite(cpy, bspheader.vertices.size, 1, OutFile);
+	free(cpy);
+	if (test == 0)
+		return -1;
+	tmp = (bspheader.vertices.size + 3) & ~3;
+	if (tmp > bspheader.vertices.size)
+	{
+		tmp -= bspheader.vertices.size;
+		fwrite(pad, tmp, 1, OutFile);
+	}
+
+	cpy = (unsigned char *)malloc(bspheader.nodes.size);
+	fseek(InFile, InitOFFS+bspheader.nodes.offset, SEEK_SET);
+	fread(cpy, 1, bspheader.nodes.size, InFile);
+	bspheader.nodes.offset = ftell(OutFile)-LittleLong(NewPakEnt[NPcnt].offset);
+	test = fwrite(cpy, bspheader.nodes.size, 1, OutFile);
+	free(cpy);
+	if (test == 0)
+		return -1;
+	tmp = (bspheader.nodes.size + 3) & ~3;
+	if (tmp > bspheader.nodes.size)
+	{
+		tmp -= bspheader.nodes.size;
+		fwrite(pad, tmp, 1, OutFile);
+	}
+
+	cpy = (unsigned char *)malloc(bspheader.texinfo.size);
+	fseek(InFile, InitOFFS+bspheader.texinfo.offset, SEEK_SET);
+	fread(cpy, 1, bspheader.texinfo.size, InFile);
+	bspheader.texinfo.offset = ftell(OutFile)-LittleLong(NewPakEnt[NPcnt].offset);
+	test = fwrite(cpy, bspheader.texinfo.size, 1, OutFile);
+	free(cpy);
+	if (test == 0)
+		return -1;
+	tmp = (bspheader.texinfo.size + 3) & ~3;
+	if (tmp > bspheader.texinfo.size)
+	{
+		tmp -= bspheader.texinfo.size;
+		fwrite(pad, tmp, 1, OutFile);
+	}
+
+	cpy = (unsigned char *)malloc(bspheader.faces.size);
+	fseek(InFile, InitOFFS+bspheader.faces.offset, SEEK_SET);
+	fread(cpy, 1, bspheader.faces.size, InFile);
+	bspheader.faces.offset = ftell(OutFile)-LittleLong(NewPakEnt[NPcnt].offset);
+	test = fwrite(cpy, bspheader.faces.size, 1, OutFile);
+	free(cpy);
+	if (test == 0)
+		return -1;
+	tmp = (bspheader.faces.size + 3) & ~3;
+	if (tmp > bspheader.faces.size)
+	{
+		tmp -= bspheader.faces.size;
+		fwrite(pad, tmp, 1, OutFile);
+	}
+
+	cpy = (unsigned char *)malloc(bspheader.clipnodes.size);
+	fseek(InFile, InitOFFS+bspheader.clipnodes.offset, SEEK_SET);
+	fread(cpy, 1, bspheader.clipnodes.size, InFile);
+	bspheader.clipnodes.offset = ftell(OutFile)-LittleLong(NewPakEnt[NPcnt].offset);
+	test = fwrite(cpy, bspheader.clipnodes.size, 1, OutFile);
+	free(cpy);
+	if (test == 0)
+		return -1;
+	tmp = (bspheader.clipnodes.size + 3) & ~3;
+	if (tmp > bspheader.clipnodes.size)
+	{
+		tmp -= bspheader.clipnodes.size;
+		fwrite(pad, tmp, 1, OutFile);
+	}
+
+	cpy = (unsigned char *)malloc(bspheader.lface.size);
+	fseek(InFile, InitOFFS+bspheader.lface.offset, SEEK_SET);
+	fread(cpy, 1, bspheader.lface.size, InFile);
+	bspheader.lface.offset = ftell(OutFile)-LittleLong(NewPakEnt[NPcnt].offset);
+	test = fwrite(cpy, bspheader.lface.size, 1, OutFile);
+	free(cpy);
+	if (test == 0)
+		return -1;
+	tmp = (bspheader.lface.size + 3) & ~3;
+	if (tmp > bspheader.lface.size)
+	{
+		tmp -= bspheader.lface.size;
+		fwrite(pad, tmp, 1, OutFile);
+	}
+
+	cpy = (unsigned char *)malloc(bspheader.ledges.size);
+	fseek(InFile, InitOFFS+bspheader.ledges.offset, SEEK_SET);
+	fread(cpy, 1, bspheader.ledges.size, InFile);
+	bspheader.ledges.offset = ftell(OutFile)-LittleLong(NewPakEnt[NPcnt].offset);
+	test = fwrite(cpy, bspheader.ledges.size, 1, OutFile);
+	free(cpy);
+	if (test == 0)
+		return -1;
+	tmp = (bspheader.ledges.size + 3) & ~3;
+	if (tmp > bspheader.ledges.size)
+	{
+		tmp -= bspheader.ledges.size;
+		fwrite(pad, tmp, 1, OutFile);
+	}
+
+	cpy = (unsigned char *)malloc(bspheader.edges.size);
+	fseek(InFile, InitOFFS+bspheader.edges.offset, SEEK_SET);
+	fread(cpy, 1, bspheader.edges.size, InFile);
+	bspheader.edges.offset = ftell(OutFile)-LittleLong(NewPakEnt[NPcnt].offset);
+	test = fwrite(cpy, bspheader.edges.size, 1, OutFile);
+	free(cpy);
+	if (test == 0)
+		return -1;
+	tmp = (bspheader.edges.size + 3) & ~3;
+	if (tmp > bspheader.edges.size)
+	{
+		tmp -= bspheader.edges.size;
+		fwrite(pad, tmp, 1, OutFile);
+	}
+
+	cpy = (unsigned char *)malloc(bspheader.models.size);
+	fseek(InFile, InitOFFS+bspheader.models.offset, SEEK_SET);
+	fread(cpy, 1, bspheader.models.size, InFile);
+	bspheader.models.offset = ftell(OutFile)-LittleLong(NewPakEnt[NPcnt].offset);
+	test = fwrite(cpy, bspheader.models.size, 1, OutFile);
+	free(cpy);
+	if (test == 0)
+		return -1;
+	tmp = (bspheader.models.size + 3) & ~3;
+	if (tmp > bspheader.models.size)
+	{
+		tmp -= bspheader.models.size;
+		fwrite(pad, tmp, 1, OutFile);
+	}
+
+	cpy = (unsigned char *)malloc(bspheader.lightmaps.size);
+	fseek(InFile, InitOFFS+bspheader.lightmaps.offset, SEEK_SET);
+	fread(cpy, 1, bspheader.lightmaps.size, InFile);
+	bspheader.lightmaps.offset = ftell(OutFile)-LittleLong(NewPakEnt[NPcnt].offset);
+	test = fwrite(cpy, bspheader.lightmaps.size, 1, OutFile);
+	free(cpy);
+	if (test == 0)
+		return -1;
+	tmp = (bspheader.lightmaps.size + 3) & ~3;
+	if (tmp > bspheader.lightmaps.size)
+	{
+		tmp -= bspheader.lightmaps.size;
+		fwrite(pad, tmp, 1, OutFile);
+	}
+
+	bspheader.visilist.offset = ftell(OutFile) - LittleLong(NewPakEnt[NPcnt].offset);
+	test = fwrite(visdat[count].visdata, bspheader.visilist.size, 1, OutFile);
+	if (test == 0)
+		return -1;
+	tmp = (bspheader.visilist.size + 3) & ~3;
+	if (tmp > bspheader.visilist.size)
+	{
+		tmp -= bspheader.visilist.size;
+		fwrite(pad, tmp, 1, OutFile);
 	}
 
 	cpy = (unsigned char *)malloc(bspheader.entities.size);
@@ -649,19 +806,12 @@ static int BSPFix (int InitOFFS)
 	free(cpy);
 	if (test == 0)
 		return -1;
-
-//	printf("A: %i %i\n", bspheader.entities.offset, ftell(OutFile));
-
-	cpy = (unsigned char *)malloc(bspheader.planes.size);
-	fseek(InFile, InitOFFS+bspheader.planes.offset, SEEK_SET);
-	fread(cpy, 1, bspheader.planes.size, InFile);
-	bspheader.planes.offset = ftell(OutFile)-LittleLong(NewPakEnt[NPcnt].offset);
-	test = fwrite(cpy, bspheader.planes.size, 1, OutFile);
-	free(cpy);
-	if (test == 0)
-		return -1;
-
-//	printf("B: %i\n", ftell(OutFile));
+	tmp = (bspheader.entities.size + 3) & ~3;
+	if (tmp > bspheader.entities.size)
+	{
+		tmp -= bspheader.entities.size;
+		fwrite(pad, tmp, 1, OutFile);
+	}
 
 	cpy = (unsigned char *)malloc(bspheader.miptex.size);
 	fseek(InFile, InitOFFS+bspheader.miptex.offset, SEEK_SET);
@@ -671,115 +821,14 @@ static int BSPFix (int InitOFFS)
 	free(cpy);
 	if (test == 0)
 		return -1;
-
-//	printf("C: %i\n", ftell(OutFile));
-
-	cpy = (unsigned char *)malloc(bspheader.vertices.size);
-	fseek(InFile, InitOFFS+bspheader.vertices.offset, SEEK_SET);
-	fread(cpy, 1, bspheader.vertices.size, InFile);
-	bspheader.vertices.offset = ftell(OutFile)-LittleLong(NewPakEnt[NPcnt].offset);
-	test = fwrite(cpy, bspheader.vertices.size, 1, OutFile);
-	free(cpy);
-	if (test == 0)
-		return -1;
-
-	cpy = (unsigned char *)malloc(bspheader.nodes.size);
-	fseek(InFile, InitOFFS+bspheader.nodes.offset, SEEK_SET);
-	fread(cpy, 1, bspheader.nodes.size, InFile);
-	bspheader.nodes.offset = ftell(OutFile)-LittleLong(NewPakEnt[NPcnt].offset);
-	test = fwrite(cpy, bspheader.nodes.size, 1, OutFile);
-	free(cpy);
-	if (test == 0)
-		return -1;
-
-	cpy = (unsigned char *)malloc(bspheader.texinfo.size);
-	fseek(InFile, InitOFFS+bspheader.texinfo.offset, SEEK_SET);
-	fread(cpy, 1, bspheader.texinfo.size, InFile);
-	bspheader.texinfo.offset = ftell(OutFile)-LittleLong(NewPakEnt[NPcnt].offset);
-	test = fwrite(cpy, bspheader.texinfo.size, 1, OutFile);
-	free(cpy);
-	if (test == 0)
-		return -1;
-
-//	printf("G: %i\n", ftell(OutFile));
-
-	cpy = (unsigned char *)malloc(bspheader.faces.size);
-	fseek(InFile, InitOFFS+bspheader.faces.offset, SEEK_SET);
-	fread(cpy, 1, bspheader.faces.size, InFile);
-	bspheader.faces.offset = ftell(OutFile)-LittleLong(NewPakEnt[NPcnt].offset);
-	test = fwrite(cpy, bspheader.faces.size, 1, OutFile);
-	free(cpy);
-	if (test == 0)
-		return -1;
-
-//	printf("H: %i\n", ftell(OutFile));
-
-	cpy = (unsigned char *)malloc(bspheader.lightmaps.size);
-	fseek(InFile, InitOFFS+bspheader.lightmaps.offset, SEEK_SET);
-	fread(cpy, 1, bspheader.lightmaps.size, InFile);
-	bspheader.lightmaps.offset = ftell(OutFile)-LittleLong(NewPakEnt[NPcnt].offset);
-	test = fwrite(cpy, bspheader.lightmaps.size, 1, OutFile);
-	free(cpy);
-	if (test == 0)
-		return -1;
-
-//	printf("I: %i\n", ftell(OutFile));
-
-	cpy = (unsigned char *)malloc(bspheader.clipnodes.size);
-	fseek(InFile, InitOFFS+bspheader.clipnodes.offset, SEEK_SET);
-	fread(cpy, 1, bspheader.clipnodes.size, InFile);
-	bspheader.clipnodes.offset = ftell(OutFile)-LittleLong(NewPakEnt[NPcnt].offset);
-	test = fwrite(cpy, bspheader.clipnodes.size, 1, OutFile);
-	free(cpy);
-	if (test == 0)
-		return -1;
-//	printf("J: %i\n", ftell(OutFile));
-
-
-	cpy = (unsigned char *)malloc(bspheader.lface.size);
-	fseek(InFile, InitOFFS+bspheader.lface.offset, SEEK_SET);
-	fread(cpy, 1, bspheader.lface.size, InFile);
-	bspheader.lface.offset = ftell(OutFile)-LittleLong(NewPakEnt[NPcnt].offset);
-	test = fwrite(cpy, bspheader.lface.size, 1, OutFile);
-	free(cpy);
-	if (test == 0)
-		return -1;
-
-//	printf("L: %i\n", ftell(OutFile));
-
-	cpy = (unsigned char *)malloc(bspheader.edges.size);
-	fseek(InFile, InitOFFS+bspheader.edges.offset, SEEK_SET);
-	fread(cpy, 1, bspheader.edges.size, InFile);
-	bspheader.edges.offset = ftell(OutFile)-LittleLong(NewPakEnt[NPcnt].offset);
-	test = fwrite(cpy, bspheader.edges.size, 1, OutFile);
-	free(cpy);
-	if (test == 0)
-		return -1;
-
-//	printf("M: %i\n", ftell(OutFile));
-
-	cpy = (unsigned char *)malloc(bspheader.ledges.size);
-	fseek(InFile, InitOFFS+bspheader.ledges.offset, SEEK_SET);
-	fread(cpy, 1, bspheader.ledges.size, InFile);
-	bspheader.ledges.offset = ftell(OutFile)-LittleLong(NewPakEnt[NPcnt].offset);
-	test = fwrite(cpy, bspheader.ledges.size, 1, OutFile);
-	free(cpy);
-	if (test == 0)
-		return -1;
-
-//	printf("N: %i\n", ftell(OutFile));
-
-	cpy = (unsigned char *)malloc(bspheader.models.size);
-	fseek(InFile, InitOFFS+bspheader.models.offset, SEEK_SET);
-	fread(cpy, 1, bspheader.models.size, InFile);
-	bspheader.models.offset = ftell(OutFile)-LittleLong(NewPakEnt[NPcnt].offset);
-	test = fwrite(cpy, bspheader.models.size, 1, OutFile);
-	free(cpy);
-	if (test == 0)
-		return -1;
+	tmp = (bspheader.miptex.size + 3) & ~3;
+	if (tmp > bspheader.miptex.size)
+	{
+		tmp -= bspheader.miptex.size;
+		fwrite(pad, tmp, 1, OutFile);
+	}
 
 	here = ftell(OutFile);
-//	printf("O: %i\n", here);
 	fflush(OutFile);
 
 /* swap the header */
@@ -793,8 +842,6 @@ static int BSPFix (int InitOFFS)
 
 	fseek(OutFile, here, SEEK_SET);
 	NewPakEnt[NPcnt].size = LittleLong( ftell(OutFile) - LittleLong(NewPakEnt[NPcnt].offset) );
-
-//	printf("End: %i\n", ftell(OutFile));
 
 	return 1;
 }
@@ -886,8 +933,8 @@ static int BSPNew (int InitOFFS)
 	printf("Vis info is at %d and is %d long\n", bspheader.visilist.offset, bspheader.visilist.size);
 	printf("Leaf info is at %d and is %d long\n", bspheader.leaves.offset, bspheader.leaves.size);
 
-/*	If we don't perform the following check,
-	we shall fail at the fwrite test below.	*/
+/*	Map with no vis data: no need to do this. (And if
+	we do, we shall fail at the fwrite test below.)	*/
 	if (bspheader.visilist.size == 0)
 	{
 		printf("Vis info size = 0.  Skipping...\n");
@@ -905,7 +952,6 @@ static int BSPNew (int InitOFFS)
 	fseek(InFile, InitOFFS+bspheader.visilist.offset, SEEK_SET);
 	fread(cpy, 1, bspheader.visilist.size, InFile);
 	len = Sys_filesize(VIS);
-//	printf("%i\n", len);
 	if (len > -1)
 		fseek(fVIS, 0, SEEK_END);
 
