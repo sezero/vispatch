@@ -4,7 +4,7 @@
  * Copyright (C) 1997-2006  Andy Bay <IMarvinTPA@bigfoot.com>
  * Copyright (C) 2006-2008  O. Sezer <sezero@users.sourceforge.net>
  *
- * $Id: vispatch.c,v 1.7 2008-03-17 21:40:42 sezero Exp $
+ * $Id: vispatch.c,v 1.8 2008-03-17 21:45:16 sezero Exp $
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -69,22 +69,24 @@ static int ChooseFile (char *FileSpec, int Offset, int length);
 
 /*============================================================================*/
 
-#define CLOSE_ALL {			\
-	if (InFile)			\
-		fclose(InFile);		\
-	if (OutFile)			\
-		fclose(OutFile);	\
-	if (fVIS)			\
-		fclose(fVIS);		\
-}
+#define CLOSE_ALL						\
+do {								\
+	if (InFile)						\
+		fclose(InFile);					\
+	if (OutFile)						\
+		fclose(OutFile);				\
+	if (fVIS)						\
+		fclose(fVIS);					\
+} while (0)
 
 
-#define FWRITE_ERROR {							\
-	CLOSE_ALL;							\
-	remove(TempFile);						\
-	freevis();							\
-	Error("Errors during fwrite: Not enough disk space?");		\
-}
+#define FWRITE_ERROR						\
+do {								\
+	CLOSE_ALL;						\
+	remove(TempFile);					\
+	freevis();						\
+	Error("Errors during fwrite: Not enough disk space?");	\
+} while (0)
 
 
 /*============================================================================*/
