@@ -2,9 +2,9 @@
  * VisPatch :  Quake level patcher for water visibility.
  *
  * Copyright (C) 1997-2006  Andy Bay <IMarvinTPA@bigfoot.com>
- * Copyright (C) 2006-2007  O. Sezer <sezero@users.sourceforge.net>
+ * Copyright (C) 2006-2008  O. Sezer <sezero@users.sourceforge.net>
  *
- * $Id: vispatch.c,v 1.5 2008-03-17 21:33:28 sezero Exp $
+ * $Id: vispatch.c,v 1.6 2008-03-17 21:35:53 sezero Exp $
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -1019,7 +1019,7 @@ static void loadvis(FILE *fp)
 	}
 
 	visdat = (visdat_t *)malloc(sizeof(visdat_t)*count);
-	if (visdat == 0)
+	if (visdat == NULL)
 		Error ("Not enough memory!");
 
 	fseek(fp, 0, SEEK_SET);
@@ -1031,11 +1031,12 @@ static void loadvis(FILE *fp)
 		fread(&visdat[tmp].vislen, 1, sizeof(int), fp);
 		visdat[tmp].len = LittleLong(visdat[tmp].len);
 		visdat[tmp].vislen = LittleLong(visdat[tmp].vislen);
+		numvis = tmp;
 	//	printf("%i\n", visdat[tmp].vislen);
 		visdat[tmp].visdata = (unsigned char *)malloc(visdat[tmp].vislen);
-		if (visdat[tmp].visdata == 0)
+		if (visdat[tmp].visdata == NULL)
 		{
-			free(visdat);
+			freevis();
 			Error ("Not enough memory!");
 		}
 		fread(visdat[tmp].visdata, 1, visdat[tmp].vislen, fp);
@@ -1043,9 +1044,10 @@ static void loadvis(FILE *fp)
 		fread(&visdat[tmp].leaflen, 1, sizeof(int), fp);
 		visdat[tmp].leaflen = LittleLong(visdat[tmp].leaflen);
 		visdat[tmp].leafdata = (unsigned char *)malloc(visdat[tmp].leaflen);
-		if (visdat[tmp].leafdata == 0)
+		if (visdat[tmp].leafdata == NULL)
 		{
-			free(visdat);
+			free(visdat[tmp].visdata);
+			freevis();
 			Error ("Not enough memory!");
 		}
 		fread(visdat[tmp].leafdata, 1, visdat[tmp].leaflen, fp);
