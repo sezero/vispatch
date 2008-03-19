@@ -4,7 +4,7 @@
  * Copyright (C) 1997-2006  Andy Bay <IMarvinTPA@bigfoot.com>
  * Copyright (C) 2006-2008  O. Sezer <sezero@users.sourceforge.net>
  *
- * $Id: vispatch.c,v 1.8 2008-03-17 21:45:16 sezero Exp $
+ * $Id: vispatch.c,v 1.9 2008-03-19 20:05:23 sezero Exp $
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -136,7 +136,6 @@ static void usage (void)
 	printf("  Retrieve all vis data from the files in the directory\n");
 	printf("  hipnotic, and dump it into a file named vispatch.dat\n");
 #endif
-	exit (0);
 }
 
 
@@ -175,12 +174,18 @@ int main (int argc, char **argv)
 	{
 		for (tmp = 1; tmp < argc; tmp++)
 		{
+			if (argv[tmp][0] == '/')
+				argv[tmp][0] = '-';
+
 			q_strlwr(argv[tmp]);
 			if (strcmp(argv[tmp], "-?"    ) == 0 ||
 			    strcmp(argv[tmp], "-h"    ) == 0 ||
 			    strcmp(argv[tmp], "-help" ) == 0 ||
 			    strcmp(argv[tmp], "--help") == 0 )
+			{
 				usage();
+				exit (0);
+			}
 		}
 	}
 
@@ -192,11 +197,8 @@ int main (int argc, char **argv)
 	{
 		for (tmp = 1; tmp < argc; tmp++)
 		{
-			if (argv[tmp][0] == '-' || argv[tmp][0] == '/')
+			if (argv[tmp][0] == '-')
 			{
-				if (argv[tmp][0] == '/')
-					argv[tmp][0] = '-';
-
 				if (strcmp(argv[tmp],"-data") == 0)
 				{
 					argv[tmp][0] = 0;

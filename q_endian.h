@@ -2,7 +2,7 @@
 	q_endian.h
 	endianness handling
 
-	$Id: q_endian.h,v 1.1 2008-01-18 09:57:01 sezero Exp $
+	$Id: q_endian.h,v 1.2 2008-03-19 20:02:28 sezero Exp $
 
 	Copyright (C) 1996-1997  Id Software, Inc.
 	Copyright (C) 2007-2008  O.Sezer <sezero@users.sourceforge.net>
@@ -174,12 +174,12 @@ extern void ByteOrder_Init (void);
 */
 #if ENDIAN_RUNTIME_DETECT
 
-extern short	(*BigShort) (short l);
-extern short	(*LittleShort) (short l);
-extern int	(*BigLong) (int l);
-extern int	(*LittleLong) (int l);
-extern float	(*BigFloat) (float l);
-extern float	(*LittleFloat) (float l);
+extern short	(*BigShort) (short);
+extern short	(*LittleShort) (short);
+extern int	(*BigLong) (int);
+extern int	(*LittleLong) (int);
+extern float	(*BigFloat) (float);
+extern float	(*LittleFloat) (float);
 
 #else	/* ! ENDIAN_RUNTIME_DETECT */
 
