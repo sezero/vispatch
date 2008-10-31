@@ -1,12 +1,11 @@
 # GNU Makefile for vispatch windows binaries using GCC (MinGW).
-# $Id: makefile.mingw,v 1.1 2008-01-18 09:57:01 sezero Exp $
+# $Id: makefile.mingw,v 1.2 2008-10-31 16:40:52 sezero Exp $
 
 CC ?= gcc
 
 OBJECTS:= utilslib.o \
 	strlcat.o \
 	strlcpy.o \
-	q_endian.o \
 	vispatch.o
 
 OPTIMIZATIONS:= -O2

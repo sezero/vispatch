@@ -1,13 +1,8 @@
 /*
 	compiler.h
 	compiler specific definitions and settings
-	used in the uhexen2 (Hammer of Thyrion) tree.
-	- standalone header
-	- doesn't and must not include any other headers
-	- shouldn't depend on arch_def.h, q_stdinc.h, or
-	  any other headers
 
-	$Id: compiler.h,v 1.2 2008-10-31 07:23:35 sezero Exp $
+	$Id: compiler.h,v 1.3 2008-10-31 16:40:52 sezero Exp $
 
 	Copyright (C) 2007  O.Sezer <sezero@users.sourceforge.net>
 
@@ -30,38 +25,12 @@
 		Boston, MA  02110-1301  USA
 */
 
-#ifndef __HX2_COMPILER_H
-#define __HX2_COMPILER_H
+#ifndef __VP_COMPILER_H
+#define __VP_COMPILER_H
 
 #if !defined(__GNUC__)
 #define	__attribute__(x)
 #endif	/* __GNUC__ */
-
-/* argument format attributes for function
- * pointers are supported for gcc >= 3.1
- */
-#if defined(__GNUC__) && (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ > 0))
-#define	__fp_attribute__	__attribute__
-#else
-#define	__fp_attribute__(x)
-#endif
-
-#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
-#define	__thisfunc__	__func__
-#elif defined(__GNUC__) && __GNUC__ < 3
-#define	__thisfunc__	__FUNCTION__
-#elif defined(__GNUC__) && __GNUC__ > 2
-#define	__thisfunc__	__func__
-#elif defined(__WATCOMC__)
-#define	__thisfunc__	__FUNCTION__
-#elif defined(__LCC__)
-#define	__thisfunc__	__func__
-#elif defined(_MSC_VER) && _MSC_VER >= 1300	/* VC7++ */
-#define	__thisfunc__	__FUNCTION__
-#else	/* stupid fallback */
-/*#define	__thisfunc__	__FILE__*/
-#error	__func__ or __FUNCTION__ compiler token not supported? define one...
-#endif
 
 /* Some compilers, such as OpenWatcom, and possibly other compilers
  * from the DOS universe, define __386__ instead of __i386__
@@ -78,5 +47,5 @@
 #endif
 
 
-#endif	/* __HX2_COMPILER_H */
+#endif	/* __VP_COMPILER_H */
 

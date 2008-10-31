@@ -1,10 +1,11 @@
 /*
  * VisPatch :  Quake level patcher for water visibility.
  *
+ * Copyright (C) 1996-1997  Id Software, Inc.
  * Copyright (C) 1997-2006  Andy Bay <IMarvinTPA@bigfoot.com>
- * Copyright (C) 2006-2007  O. Sezer <sezero@users.sourceforge.net>
+ * Copyright (C) 2006-2008  O. Sezer <sezero@users.sourceforge.net>
  *
- * $Id: utilslib.c,v 1.2 2008-01-29 18:00:10 sezero Exp $
+ * $Id: utilslib.c,v 1.3 2008-10-31 16:40:52 sezero Exp $
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -120,57 +121,6 @@ void Error (const char *error, ...)
 
 /*============================================================================*/
 
-void ValidateByteorder (void)
-{
-	const char	*endianism[] = { "BE", "LE", "PDP", "Unknown" };
-	const char	*tmp;
-
-	ByteOrder_Init ();
-	if (host_byteorder < 0)
-		Error ("%s: Unsupported byte order.", __thisfunc__);
-	switch (host_byteorder)
-	{
-	case BIG_ENDIAN:
-		tmp = endianism[0];
-		break;
-	case LITTLE_ENDIAN:
-		tmp = endianism[1];
-		break;
-	case PDP_ENDIAN:
-		tmp = endianism[2];
-		break;
-	default:
-		tmp = endianism[3];
-		break;
-	}
-//	printf("Detected byte order: %s\n", tmp);
-#if !ENDIAN_RUNTIME_DETECT
-	if (host_byteorder != BYTE_ORDER)
-	{
-		const char	*tmp2;
-
-		switch (BYTE_ORDER)
-		{
-		case BIG_ENDIAN:
-			tmp2 = endianism[0];
-			break;
-		case LITTLE_ENDIAN:
-			tmp2 = endianism[1];
-			break;
-		case PDP_ENDIAN:
-			tmp2 = endianism[2];
-			break;
-		default:
-			tmp2 = endianism[3];
-			break;
-		}
-		Error ("Detected byte order %s doesn't match compiled %s order!", tmp, tmp2);
-	}
-#endif	/* ENDIAN_RUNTIME_DETECT */
-}
-
-/*============================================================================*/
-
 #if defined(PLATFORM_WINDOWS)
 
 static long	findhandle;
@@ -243,7 +193,6 @@ int Sys_getcwd (char *buf, size_t size)
 
 	return 0;
 }
-
 
 #endif	/* PLATFORM_WINDOWS */
 
@@ -345,4 +294,193 @@ int Sys_getcwd (char *buf, size_t size)
 }
 
 #endif	/* PLATFORM_UNIX */
+
+
+/*============================================================================*/
+
+/*========== BYTE ORDER STUFF ================================================*/
+
+#if ENDIAN_RUNTIME_DETECT
+#define	__byteswap_func	static
+#else
+#define	__byteswap_func
+#endif	/* ENDIAN_RUNTIME_DETECT */
+
+#if ENDIAN_RUNTIME_DETECT
+/*
+# warning "Byte order will be detected at runtime"
+*/
+#elif defined(ENDIAN_ASSUMED_UNSAFE)
+# warning "Cannot determine byte order:"
+# if (ENDIAN_ASSUMED_UNSAFE == LITTLE_ENDIAN)
+#    warning "Using LIL endian as an UNSAFE default."
+# elif (ENDIAN_ASSUMED_UNSAFE == PDP_ENDIAN)
+#    warning "Using PDP (NUXI) as an UNSAFE default."
+# elif (ENDIAN_ASSUMED_UNSAFE == BIG_ENDIAN)
+#    warning "Using BIG endian as an UNSAFE default."
+# endif
+# warning "Revise the macros in q_endian.h for this"
+# warning "machine or use runtime detection !!!"
+#endif	/* ENDIAN_ASSUMED_UNSAFE */
+
+
+int host_byteorder;
+
+int DetectByteorder (void)
+{
+	int	i = 0x12345678;
+		/*    U N I X */
+
+	/*
+	BE_ORDER:  12 34 56 78
+		   U  N  I  X
+
+	LE_ORDER:  78 56 34 12
+		   X  I  N  U
+
+	PDP_ORDER: 34 12 78 56
+		   N  U  X  I
+	*/
+
+	if ( *(char *)&i == 0x12 )
+		return BIG_ENDIAN;
+	else if ( *(char *)&i == 0x78 )
+		return LITTLE_ENDIAN;
+	else if ( *(char *)&i == 0x34 )
+		return PDP_ENDIAN;
+
+	return -1;
+}
+
+__byteswap_func
+int LongSwap (int l)
+{
+	unsigned char	b1, b2, b3, b4;
+
+	b1 = l & 255;
+	b2 = (l>>8 ) & 255;
+	b3 = (l>>16) & 255;
+	b4 = (l>>24) & 255;
+
+	return ((int)b1<<24) + ((int)b2<<16) + ((int)b3<<8) + b4;
+}
+
+__byteswap_func
+int LongSwapPDP2BE (int l)
+{
+	union
+	{
+		int	l;
+		unsigned char	b[4];
+	} dat1, dat2;
+
+	dat1.l = l;
+	dat2.b[0] = dat1.b[1];
+	dat2.b[1] = dat1.b[0];
+	dat2.b[2] = dat1.b[3];
+	dat2.b[3] = dat1.b[2];
+
+	return dat2.l;
+}
+
+__byteswap_func
+int LongSwapPDP2LE (int l)
+{
+	union
+	{
+		int	l;
+		short	s[2];
+	} dat1, dat2;
+
+	dat1.l = l;
+	dat2.s[0] = dat1.s[1];
+	dat2.s[1] = dat1.s[0];
+
+	return dat2.l;
+}
+
+#if ENDIAN_RUNTIME_DETECT
+
+__byteswap_func
+int LongNoSwap (int l)
+{
+	return l;
+}
+
+int	(*BigLong) (int);
+int	(*LittleLong) (int);
+
+#endif	/* ENDIAN_RUNTIME_DETECT */
+
+void ByteOrder_Init (void)
+{
+	host_byteorder = DetectByteorder ();
+
+#if ENDIAN_RUNTIME_DETECT
+	switch (host_byteorder)
+	{
+	case BIG_ENDIAN:
+		BigLong = LongNoSwap;
+		LittleLong = LongSwap;
+		break;
+
+	case LITTLE_ENDIAN:
+		BigLong = LongSwap;
+		LittleLong = LongNoSwap;
+		break;
+
+	case PDP_ENDIAN:
+		BigLong = LongSwapPDP2BE;
+		LittleLong = LongSwapPDP2LE;
+		break;
+
+	default:
+		break;
+	}
+#endif	/* ENDIAN_RUNTIME_DETECT */
+}
+
+void ValidateByteorder (void)
+{
+	const char	*endianism[] = { "BE", "LE", "PDP", "Unknown" };
+	int		i;
+
+	ByteOrder_Init ();
+	if (host_byteorder < 0)
+		Error ("Unsupported byte order.");
+	switch (host_byteorder)
+	{
+	case BIG_ENDIAN:
+		i = 0; break;
+	case LITTLE_ENDIAN:
+		i = 1; break;
+	case PDP_ENDIAN:
+		i = 2; break;
+	default:
+		i = 3; break;
+	}
+	/*
+	printf("Detected byte order: %s\n", endianism[i]);
+	*/
+#if !ENDIAN_RUNTIME_DETECT
+	if (host_byteorder != BYTE_ORDER)
+	{
+		int		j;
+
+		switch (BYTE_ORDER)
+		{
+		case BIG_ENDIAN:
+			j = 0; break;
+		case LITTLE_ENDIAN:
+			j = 1; break;
+		case PDP_ENDIAN:
+			j = 2; break;
+		default:
+			j = 3; break;
+		}
+		Error ("Detected byte order %s doesn't match compiled %s order!",
+			endianism[i], endianism[j]);
+	}
+#endif	/* ENDIAN_RUNTIME_DETECT */
+}
 

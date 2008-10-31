@@ -4,7 +4,7 @@
  * Copyright (C) 1997-2006  Andy Bay <IMarvinTPA@bigfoot.com>
  * Copyright (C) 2006-2008  O. Sezer <sezero@users.sourceforge.net>
  *
- * $Id: vispatch.c,v 1.9 2008-03-19 20:05:23 sezero Exp $
+ * $Id: vispatch.c,v 1.10 2008-10-31 16:40:52 sezero Exp $
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -593,7 +593,7 @@ static int BSPFix (int InitOFFS)
 				char *cc;
 				tmp = LittleLong(NewPakEnt[NPcnt].size);
 				if (tmp < 0)
-					Error ("%s: Error: negative size!", __thisfunc__);
+					Error ("BSPFix: negative size!");
 				cc = (char *)malloc(tmp);
 				fread(cc, 1, tmp, InFile);
 				test = fwrite(cc, 1, tmp, OutFile);
