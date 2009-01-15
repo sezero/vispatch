@@ -9,14 +9,14 @@ TARGET=i386-mingw32msvc
 PATH="$PREFIX/bin:$PREFIX/$TARGET/bin:$PATH"
 export PATH
 
-WINBUILD=1
+W32BUILD=1
+export W32BUILD
 
 CC="$TARGET-gcc"
 AS="$TARGET-as"
 AR="$TARGET-ar"
 WINDRES="$TARGET-windres"
-NASM="nasm"
-export CC NASM WINDRES AS AR
+export CC WINDRES AS AR
 
 STRIPPER="$TARGET-strip"
 

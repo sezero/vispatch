@@ -9,13 +9,12 @@ PATH="$PREFIX/bin:$PREFIX/$TARGET/bin:$PATH"
 export PATH
 
 DOSBUILD=1
+export DOSBUILD
 
 CC="$TARGET-gcc"
 AS="$TARGET-as"
 AR="$TARGET-ar"
-NASM="nasm"
-
-export CC NASM AS AR DOSBUILD
+export CC AS AR
 
 HOST_OS=`uname|sed -e s/_.*//|tr '[:upper:]' '[:lower:]'`
 
