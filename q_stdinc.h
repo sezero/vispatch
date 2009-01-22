@@ -2,7 +2,7 @@
 	q_stdinc.h
 	includes the minimum necessary stdc headers,
 
-	$Id: q_stdinc.h,v 1.3 2008-10-31 16:47:09 sezero Exp $
+	$Id: q_stdinc.h,v 1.4 2009-01-22 08:25:40 sezero Exp $
 
 	Copyright (C) 1996-1997  Id Software, Inc.
 	Copyright (C) 2007-2008  O.Sezer <sezero@users.sourceforge.net>
@@ -69,6 +69,14 @@ COMPILE_TIME_ASSERT(char, sizeof(char) == 1);
 COMPILE_TIME_ASSERT(long, sizeof(long) >= 4);
 COMPILE_TIME_ASSERT(int, sizeof(int) == 4);
 COMPILE_TIME_ASSERT(short, sizeof(short) == 2);
+
+
+/* Provide a substitute for offsetof() if we don't have one.
+ * This variant works on most (but not *all*) systems...
+ */
+#ifndef offsetof
+#define offsetof(t,m) ((size_t)&(((t *)0)->m))
+#endif
 
 
 /*==========================================================================*/
