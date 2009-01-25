@@ -2,7 +2,7 @@
 	compiler.h
 	compiler specific definitions and settings
 
-	$Id: compiler.h,v 1.4 2009-01-22 08:25:40 sezero Exp $
+	$Id: compiler.h,v 1.5 2009-01-25 16:18:07 sezero Exp $
 
 	Copyright (C) 2007  O.Sezer <sezero@users.sourceforge.net>
 
@@ -38,6 +38,11 @@
 #if defined(__386__) && !defined(__i386__)
 #define __i386__		1
 #endif
+
+/* inline keyword: */
+#if defined(_MSC_VER) && !defined(__cplusplus)
+#define inline __inline
+#endif	/* _MSC_VER */
 
 
 #endif	/* __VP_COMPILER_H */
