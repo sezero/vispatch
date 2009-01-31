@@ -1,5 +1,5 @@
 # GNU Makefile for vispatch windows binaries using GCC (MinGW).
-# $Id: makefile.mingw,v 1.2 2008-10-31 16:40:52 sezero Exp $
+# $Id: makefile.mingw,v 1.3 2009-01-31 08:41:57 sezero Exp $
 
 CC ?= gcc
 
@@ -11,7 +11,7 @@ OBJECTS:= utilslib.o \
 OPTIMIZATIONS:= -O2
 #OPTIMIZATIONS:= -O -g
 
-CFLAGS := -Wall -W -Wshadow $(OPTIMIZATIONS)
+CFLAGS := -Wall -W -Wshadow -DWIN32_LEAN_AND_MEAN $(OPTIMIZATIONS)
 LDFLAGS:= -mconsole
 
 all: vispatch.exe
