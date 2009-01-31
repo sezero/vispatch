@@ -5,7 +5,7 @@
  * Copyright (C) 1997-2006  Andy Bay <IMarvinTPA@bigfoot.com>
  * Copyright (C) 2006-2008  O. Sezer <sezero@users.sourceforge.net>
  *
- * $Id: utilslib.c,v 1.3 2008-10-31 16:40:52 sezero Exp $
+ * $Id: utilslib.c,v 1.4 2009-01-31 08:40:31 sezero Exp $
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -32,7 +32,9 @@
 #include "q_endian.h"
 #include <sys/stat.h>
 #if defined(PLATFORM_WINDOWS)
+#include <windows.h>
 #include <io.h>
+#include <direct.h>
 #endif	/* PLATFORM_WINDOWS */
 #if defined(PLATFORM_UNIX) || defined(PLATFORM_DOS)
 #include <unistd.h>
@@ -123,26 +125,26 @@ void Error (const char *error, ...)
 
 #if defined(PLATFORM_WINDOWS)
 
-static long	findhandle;
-static struct _finddata_t	finddata;
+static HANDLE  findhandle;
+static WIN32_FIND_DATA finddata;
 
 char *Sys_FindNextFile (void)
 {
-	int		retval;
+	BOOL	retval;
 
-	if (!findhandle || findhandle == -1)
+	if (!findhandle || findhandle == INVALID_HANDLE_VALUE)
 		return NULL;
 
-	retval = _findnext (findhandle, &finddata);
-	while (retval != -1)
+	retval = FindNextFile(findhandle,&finddata);
+	while (retval)
 	{
-		if (finddata.attrib & _A_SUBDIR)
+		if (finddata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 		{
-			retval = _findnext (findhandle, &finddata);
+			retval = FindNextFile(findhandle, &finddata);
 			continue;
 		}
 
-		return finddata.name;
+		return finddata.cFileName;
 	}
 
 	return NULL;
@@ -156,14 +158,14 @@ char *Sys_FindFirstFile (const char *path, const char *pattern)
 		Error ("Sys_FindFirst without FindClose");
 
 	q_snprintf (tmp_buf, sizeof(tmp_buf), "%s%s", path, pattern);
-	findhandle = _findfirst (tmp_buf, &finddata);
+	findhandle = FindFirstFile(tmp_buf, &finddata);
 
-	if (findhandle != -1)
+	if (findhandle != INVALID_HANDLE_VALUE)
 	{
-		if (finddata.attrib & _A_SUBDIR)
+		if (finddata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 			return Sys_FindNextFile();
 		else
-			return finddata.name;
+			return finddata.cFileName;
 	}
 
 	return NULL;
@@ -171,9 +173,9 @@ char *Sys_FindFirstFile (const char *path, const char *pattern)
 
 void Sys_FindClose (void)
 {
-	if (findhandle != -1)
-		_findclose (findhandle);
-	findhandle = 0;
+	if (findhandle != INVALID_HANDLE_VALUE)
+		FindClose(findhandle);
+	findhandle = NULL;
 }
 
 int Sys_filesize (const char *filename)
