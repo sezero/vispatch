@@ -4,7 +4,7 @@
  * Copyright (C) 1997-2006  Andy Bay <IMarvinTPA@bigfoot.com>
  * Copyright (C) 2006-2008  O. Sezer <sezero@users.sourceforge.net>
  *
- * $Id: vispatch.c,v 1.10 2008-10-31 16:40:52 sezero Exp $
+ * $Id: vispatch.c,v 1.11 2009-01-31 14:35:06 sezero Exp $
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -141,7 +141,7 @@ static void usage (void)
 
 /*============================================================================*/
 
-#if defined(PLATFORM_WINDOWS)
+#if (defined(__MINGW32__) || defined(__MINGW64__))
 
 /* From MinGW runtime/init.c :
  * [...] GetMainArgs (used below) takes a fourth argument
@@ -157,7 +157,7 @@ static void usage (void)
  */
 int	_CRT_glob = 0;
 
-#endif	/* PLATFORM_WINDOWS */
+#endif	/* __MINGW32__ / __MINGW64__ */
 
 
 int main (int argc, char **argv)
