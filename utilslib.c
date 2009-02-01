@@ -5,7 +5,7 @@
  * Copyright (C) 1997-2006  Andy Bay <IMarvinTPA@bigfoot.com>
  * Copyright (C) 2006-2008  O. Sezer <sezero@users.sourceforge.net>
  *
- * $Id: utilslib.c,v 1.4 2009-01-31 08:40:31 sezero Exp $
+ * $Id: utilslib.c,v 1.5 2009-02-01 19:55:01 sezero Exp $
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -157,7 +157,7 @@ char *Sys_FindFirstFile (const char *path, const char *pattern)
 	if (findhandle)
 		Error ("Sys_FindFirst without FindClose");
 
-	q_snprintf (tmp_buf, sizeof(tmp_buf), "%s%s", path, pattern);
+	q_snprintf (tmp_buf, sizeof(tmp_buf), "%s/%s", path, pattern);
 	findhandle = FindFirstFile(tmp_buf, &finddata);
 
 	if (findhandle != INVALID_HANDLE_VALUE)
