@@ -1,5 +1,5 @@
 
-VisPatch, version 1.4.4
+VisPatch, version 1.4.5
 
 -----------------------------------------------------------------
 
@@ -109,7 +109,7 @@ vispatch -dir hipnotic -extract
 COPYRIGHT
 
   Copyright (C) 1997-2006  Andy Bay <IMarvinTPA@bigfoot.com>
-  Copyright (C) 2006-2008  O.Sezer <sezero@users.sourceforge.net>
+  Copyright (C) 2006-2009  O.Sezer <sezero@users.sourceforge.net>
 
   VisPatch is free software;  you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published
@@ -117,5 +117,5 @@ COPYRIGHT
   option) any later version.  See the accompanying COPYING file for
   details.
 
-  $Id: vispatch.txt,v 1.7 2008-03-17 21:48:15 sezero Exp $
+  $Id: vispatch.txt,v 1.8 2009-02-03 21:50:01 sezero Exp $
 

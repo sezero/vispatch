@@ -2,9 +2,9 @@
  * VisPatch :  Quake level patcher for water visibility.
  *
  * Copyright (C) 1997-2006  Andy Bay <IMarvinTPA@bigfoot.com>
- * Copyright (C) 2006-2008  O. Sezer <sezero@users.sourceforge.net>
+ * Copyright (C) 2006-2009  O. Sezer <sezero@users.sourceforge.net>
  *
- * $Id: vispatch.c,v 1.11 2009-01-31 14:35:06 sezero Exp $
+ * $Id: vispatch.c,v 1.12 2009-02-03 21:50:01 sezero Exp $
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -160,13 +160,16 @@ int	_CRT_glob = 0;
 #endif	/* __MINGW32__ / __MINGW64__ */
 
 
+static const char authors[] = "Andy Bay, O. Sezer";
+
 int main (int argc, char **argv)
 {
 	int	ret = 0, tmp;
 	char	*testname;
 
-	printf("VisPatch %d.%d.%d by Andy Bay\n", VP_VER_MAJ, VP_VER_MID, VP_VER_MIN);
-	printf("Revised and fixed by O.Sezer\n");
+	printf("VisPatch %d.%d.%d by %s\n",
+			 VP_VER_MAJ, VP_VER_MID, VP_VER_MIN,
+			 authors);
 
 	ValidateByteorder ();
 
