@@ -2,10 +2,10 @@
 
 # used for building with djgpp cross toolchain
 
-PREFIX=/usr/local/cross-djgpp
 TARGET=i586-pc-msdosdjgpp
+PREFIX=/usr/local/cross-djgpp
 
-PATH="$PREFIX/bin:$PREFIX/$TARGET/bin:$PATH"
+PATH="$PREFIX/bin:$PATH"
 export PATH
 
 DOSBUILD=1

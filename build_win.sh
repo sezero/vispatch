@@ -3,10 +3,11 @@
 # http://www.libsdl.org/extras/win32/cross/ in mind.  Change it to meet
 # your needs and environment.
 
-PREFIX=/usr/local/cross-tools
+#TARGET=i686-pc-mingw32
 TARGET=i386-mingw32msvc
+PREFIX=/usr/local/cross-tools
 
-PATH="$PREFIX/bin:$PREFIX/$TARGET/bin:$PATH"
+PATH="$PREFIX/bin:$PATH"
 export PATH
 
 W32BUILD=1

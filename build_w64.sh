@@ -4,12 +4,9 @@
 #
 
 TARGET=x86_64-pc-mingw32
-
-# change this to meet your setup:
-#PREFIX=/opt/buildbot/mingw-w64/slave-linux/linux-i386/build/root
 PREFIX=/opt/cross_win64
 
-PATH="$PREFIX/bin:$PREFIX/$TARGET/bin:$PATH"
+PATH="$PREFIX/bin:$PATH"
 export PATH
 
 W64BUILD=1
