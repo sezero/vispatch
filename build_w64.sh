@@ -1,9 +1,9 @@
 #!/bin/sh
-#
-# Change this script to meet your needs and/or environment.
-#
 
-TARGET=x86_64-pc-mingw32
+# Change this script to meet your needs and/or environment.
+
+#TARGET=x86_64-pc-mingw32
+TARGET=x86_64-w64-mingw32
 PREFIX=/opt/cross_win64
 
 PATH="$PREFIX/bin:$PATH"

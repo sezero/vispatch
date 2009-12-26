@@ -1,11 +1,12 @@
 #!/bin/sh
-# This script is written with the cross-tools and instructions found at
-# http://www.libsdl.org/extras/win32/cross/ in mind.  Change it to meet
-# your needs and environment.
 
-#TARGET=i686-pc-mingw32
-TARGET=i386-mingw32msvc
-PREFIX=/usr/local/cross-tools
+# Change this script to meet your needs and/or environment.
+
+#TARGET=i386-mingw32msvc
+#TARGET=i686-w64-mingw32
+TARGET=i686-pc-mingw32
+#PREFIX=/opt/cross_win32
+PREFIX=/usr/local/cross-win32
 
 PATH="$PREFIX/bin:$PATH"
 export PATH
