@@ -4,7 +4,7 @@
  * Copyright (C) 1997-2006  Andy Bay <IMarvinTPA@bigfoot.com>
  * Copyright (C) 2006-2007  O. Sezer <sezero@users.sourceforge.net>
  *
- * $Id: utilslib.h,v 1.1 2008-01-18 09:57:01 sezero Exp $
+ * $Id: utilslib.h,v 1.2 2010-01-11 18:46:13 sezero Exp $
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -68,7 +68,7 @@ extern size_t q_strlcat (char *dst, const char *src, size_t size);
 #define	vsnprintf_func		vsnprintf
 #endif
 
-extern int q_snprintf (char *str, size_t size, const char *format, ...) __attribute__((format(printf,3,4)));
+extern int q_snprintf (char *str, size_t size, const char *format, ...) __attribute__((__format__(__printf__,3,4)));
 extern int q_vsnprintf(char *str, size_t size, const char *format, va_list args);
 
 extern char *q_strlwr (char *str);
@@ -83,7 +83,7 @@ extern char *Sys_FindFirstFile (const char *path, const char *pattern);
 extern char *Sys_FindNextFile (void);
 extern void Sys_FindClose (void);
 
-extern void Error (const char *error, ...) __attribute__((format(printf,1,2), noreturn));
+extern void Error (const char *error, ...) __attribute__((__format__(__printf__,1,2), __noreturn__));
 
 extern void ValidateByteorder (void);		/* call this from your main() */
 
