@@ -4,7 +4,7 @@
  * Copyright (C) 1997-2006  Andy Bay <IMarvinTPA@bigfoot.com>
  * Copyright (C) 2006-2007  O. Sezer <sezero@users.sourceforge.net>
  *
- * $Id: utilslib.h,v 1.2 2010-01-11 18:46:13 sezero Exp $
+ * $Id: utilslib.h,v 1.3 2010-08-31 13:20:05 sezero Exp $
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -69,7 +69,8 @@ extern size_t q_strlcat (char *dst, const char *src, size_t size);
 #endif
 
 extern int q_snprintf (char *str, size_t size, const char *format, ...) __attribute__((__format__(__printf__,3,4)));
-extern int q_vsnprintf(char *str, size_t size, const char *format, va_list args);
+extern int q_vsnprintf(char *str, size_t size, const char *format, va_list args)
+									__attribute__((__format__(__printf__,3,0)));
 
 extern char *q_strlwr (char *str);
 extern char *q_strupr (char *str);
