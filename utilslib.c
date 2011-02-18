@@ -5,7 +5,7 @@
  * Copyright (C) 1997-2006  Andy Bay <IMarvinTPA@bigfoot.com>
  * Copyright (C) 2006-2008  O. Sezer <sezero@users.sourceforge.net>
  *
- * $Id: utilslib.c,v 1.7 2011-02-18 07:32:10 sezero Exp $
+ * $Id: utilslib.c,v 1.8 2011-02-18 07:50:08 sezero Exp $
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -187,12 +187,21 @@ void Sys_FindClose (void)
 
 int Sys_filesize (const char *filename)
 {
-	struct stat status;
+	HANDLE fh;
+	WIN32_FIND_DATA data;
+	int size;
 
-	if (stat(filename, &status) != 0)
-		return(-1);
-
-	return(status.st_size);
+	fh = FindFirstFile(filename, &data);
+	if (fh == INVALID_HANDLE_VALUE)
+		return -1;
+	FindClose(fh);
+	if (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+		return -1;
+//	we're not dealing with gigabytes of files.
+//	size should normally smaller than INT_MAX.
+//	size = (data.nFileSizeHigh * (MAXDWORD + 1)) + data.nFileSizeLow;
+	size = (int) data.nFileSizeLow;
+	return size;
 }
 
 int Sys_getcwd (char *buf, size_t size)
@@ -350,9 +359,11 @@ int Sys_filesize (const char *filename)
 	struct stat status;
 
 	if (stat(filename, &status) == -1)
-		return(-1);
+		return -1;
+	if (! S_ISREG(status.st_mode))
+		return -1;
 
-	return(status.st_size);
+	return (int) status.st_size;
 }
 
 int Sys_getcwd (char *buf, size_t size)
