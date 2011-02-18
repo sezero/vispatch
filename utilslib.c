@@ -5,7 +5,7 @@
  * Copyright (C) 1997-2006  Andy Bay <IMarvinTPA@bigfoot.com>
  * Copyright (C) 2006-2008  O. Sezer <sezero@users.sourceforge.net>
  *
- * $Id: utilslib.c,v 1.6 2011-02-18 07:10:02 sezero Exp $
+ * $Id: utilslib.c,v 1.7 2011-02-18 07:32:10 sezero Exp $
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -36,7 +36,14 @@
 #include <io.h>
 #include <direct.h>
 #endif	/* PLATFORM_WINDOWS */
-#if defined(PLATFORM_UNIX) || defined(PLATFORM_DOS)
+#if defined(PLATFORM_DOS)
+#include <unistd.h>
+#include <dos.h>
+#include <io.h>
+#include <dir.h>
+#include <fcntl.h>
+#endif	/* PLATFORM_DOS */
+#if defined(PLATFORM_UNIX)
 #include <unistd.h>
 #include <dirent.h>
 #include <fnmatch.h>
@@ -201,7 +208,68 @@ int Sys_getcwd (char *buf, size_t size)
 
 //============================================================================
 
-#if defined(PLATFORM_UNIX) || defined(PLATFORM_DOS)
+#if defined(PLATFORM_DOS)
+
+static struct ffblk	finddata;
+static int		findhandle = -1;
+
+char *Sys_FindFirstFile (const char *path, const char *pattern)
+{
+	char	tmp_buf[256];
+
+	if (findhandle == 0)
+		Error ("Sys_FindFirst without FindClose");
+
+	q_snprintf (tmp_buf, sizeof(tmp_buf), "%s/%s", path, pattern);
+	memset (&finddata, 0, sizeof(finddata));
+
+	findhandle = findfirst(tmp_buf, &finddata, FA_ARCH | FA_RDONLY);
+	if (findhandle == 0)
+		return finddata.ff_name;
+
+	return NULL;
+}
+
+char *Sys_FindNextFile (void)
+{
+	if (findhandle != 0)
+		return NULL;
+
+	if (findnext(&finddata) == 0)
+		return finddata.ff_name;
+
+	return NULL;
+}
+
+void Sys_FindClose (void)
+{
+	findhandle = -1;
+}
+
+int Sys_filesize (const char *filename)
+{
+	struct ffblk	f;
+
+	if (findfirst(filename, &f, FA_ARCH | FA_RDONLY) != 0)
+		return -1;
+
+	return (int) f.ff_fsize;
+}
+
+int Sys_getcwd (char *buf, size_t size)
+{
+	if (getcwd(buf, size) == NULL)
+		return 1;
+
+	return 0;
+}
+
+#endif	/* PLATFORM_DOS */
+
+
+//============================================================================
+
+#if defined(PLATFORM_UNIX)
 
 static DIR		*finddir;
 static struct dirent	*finddata;
