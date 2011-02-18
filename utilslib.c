@@ -5,7 +5,7 @@
  * Copyright (C) 1997-2006  Andy Bay <IMarvinTPA@bigfoot.com>
  * Copyright (C) 2006-2008  O. Sezer <sezero@users.sourceforge.net>
  *
- * $Id: utilslib.c,v 1.5 2009-02-01 19:55:01 sezero Exp $
+ * $Id: utilslib.c,v 1.6 2011-02-18 07:10:02 sezero Exp $
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -316,8 +316,6 @@ int Sys_getcwd (char *buf, size_t size)
 # warning "Cannot determine byte order:"
 # if (ENDIAN_ASSUMED_UNSAFE == LITTLE_ENDIAN)
 #    warning "Using LIL endian as an UNSAFE default."
-# elif (ENDIAN_ASSUMED_UNSAFE == PDP_ENDIAN)
-#    warning "Using PDP (NUXI) as an UNSAFE default."
 # elif (ENDIAN_ASSUMED_UNSAFE == BIG_ENDIAN)
 #    warning "Using BIG endian as an UNSAFE default."
 # endif
@@ -367,40 +365,6 @@ int LongSwap (int l)
 	return ((int)b1<<24) + ((int)b2<<16) + ((int)b3<<8) + b4;
 }
 
-__byteswap_func
-int LongSwapPDP2BE (int l)
-{
-	union
-	{
-		int	l;
-		unsigned char	b[4];
-	} dat1, dat2;
-
-	dat1.l = l;
-	dat2.b[0] = dat1.b[1];
-	dat2.b[1] = dat1.b[0];
-	dat2.b[2] = dat1.b[3];
-	dat2.b[3] = dat1.b[2];
-
-	return dat2.l;
-}
-
-__byteswap_func
-int LongSwapPDP2LE (int l)
-{
-	union
-	{
-		int	l;
-		short	s[2];
-	} dat1, dat2;
-
-	dat1.l = l;
-	dat2.s[0] = dat1.s[1];
-	dat2.s[1] = dat1.s[0];
-
-	return dat2.l;
-}
-
 #if ENDIAN_RUNTIME_DETECT
 
 __byteswap_func
@@ -431,11 +395,6 @@ void ByteOrder_Init (void)
 		LittleLong = LongNoSwap;
 		break;
 
-	case PDP_ENDIAN:
-		BigLong = LongSwapPDP2BE;
-		LittleLong = LongSwapPDP2LE;
-		break;
-
 	default:
 		break;
 	}
@@ -448,8 +407,6 @@ void ValidateByteorder (void)
 	int		i;
 
 	ByteOrder_Init ();
-	if (host_byteorder < 0)
-		Error ("Unsupported byte order.");
 	switch (host_byteorder)
 	{
 	case BIG_ENDIAN:
@@ -457,10 +414,13 @@ void ValidateByteorder (void)
 	case LITTLE_ENDIAN:
 		i = 1; break;
 	case PDP_ENDIAN:
+		host_byteorder = -1;	/* not supported */
 		i = 2; break;
 	default:
 		i = 3; break;
 	}
+	if (host_byteorder < 0)
+		Error ("Unsupported byte order.");
 	/*
 	printf("Detected byte order: %s\n", endianism[i]);
 	*/

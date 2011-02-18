@@ -2,7 +2,7 @@
 	q_endian.h
 	endianness handling
 
-	$Id: q_endian.h,v 1.3 2008-10-31 16:40:52 sezero Exp $
+	$Id: q_endian.h,v 1.4 2011-02-18 07:10:02 sezero Exp $
 
 	Copyright (C) 1996-1997  Id Software, Inc.
 	Copyright (C) 2007-2008  O.Sezer <sezero@users.sourceforge.net>
@@ -90,7 +90,7 @@
 
 #if defined(BYTE_ORDER) && defined(LITTLE_ENDIAN) && defined(BIG_ENDIAN)
 
-# if (BYTE_ORDER != LITTLE_ENDIAN) && (BYTE_ORDER != BIG_ENDIAN) && (BYTE_ORDER != PDP_ENDIAN)
+# if (BYTE_ORDER != LITTLE_ENDIAN) && (BYTE_ORDER != BIG_ENDIAN)
 # error "Unsupported endianness."
 # endif
 
@@ -181,18 +181,10 @@ extern int	(*LittleLong) (int);
 
 extern int	LongSwap (int);
 
-extern int	LongSwapPDP2BE (int);
-extern int	LongSwapPDP2LE (int);
-
 #if (BYTE_ORDER == BIG_ENDIAN)
 
 #define BigLong(l)	(l)
 #define LittleLong(l)	LongSwap((l))
-
-#elif (BYTE_ORDER == PDP_ENDIAN)
-
-#define BigLong(l)	LongSwapPDP2BE((l))
-#define LittleLong(l)	LongSwapPDP2LE((l))
 
 #else /* BYTE_ORDER == LITTLE_ENDIAN */
 
