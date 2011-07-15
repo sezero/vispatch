@@ -16,16 +16,15 @@ export W32BUILD
 
 CC="$TARGET-gcc"
 AS="$TARGET-as"
+RANLIB="$TARGET-ranlib"
 AR="$TARGET-ar"
 WINDRES="$TARGET-windres"
-export CC WINDRES AS AR
+export CC AS RANLIB AR WINDRES
 
 STRIPPER="$TARGET-strip"
-
-if [ "$1" = "strip" ]
-then
-$STRIPPER vispatch.exe
-exit 0
+if [ "$1" = "strip" ]; then
+	$STRIPPER vispatch.exe
+	exit 0
 fi
 
 HOST_OS=`uname|sed -e s/_.*//|tr '[:upper:]' '[:lower:]'`

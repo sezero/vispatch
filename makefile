@@ -1,5 +1,5 @@
 # GNU Makefile for vispatch binaries using GCC.
-# $Id: makefile,v 1.2 2008-10-31 16:40:52 sezero Exp $
+# $Id: makefile,v 1.3 2011-07-15 09:33:49 sezero Exp $
 
 CC ?= gcc
 
@@ -8,11 +8,10 @@ OBJECTS:= utilslib.o \
 	strlcpy.o \
 	vispatch.o
 
-OPTIMIZATIONS:= -O2
-#OPTIMIZATIONS:= -O -g
+OPTIMIZATIONS= -O2
 
-CFLAGS := -Wall -W -Wshadow $(OPTIMIZATIONS)
-LDFLAGS:=
+CFLAGS = -g -Wall -W -Wshadow $(OPTIMIZATIONS)
+LDFLAGS=
 
 all: vispatch
 

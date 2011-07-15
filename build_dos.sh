@@ -13,8 +13,15 @@ export DOSBUILD
 
 CC="$TARGET-gcc"
 AS="$TARGET-as"
+RANLIB="$TARGET-ranlib"
 AR="$TARGET-ar"
-export CC AS AR
+export CC AS RANLIB AR
+
+STRIPPER="$TARGET-strip"
+if [ "$1" = "strip" ]; then
+	$STRIPPER vispatch.exe
+	exit 0
+fi
 
 HOST_OS=`uname|sed -e s/_.*//|tr '[:upper:]' '[:lower:]'`
 
