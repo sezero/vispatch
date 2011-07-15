@@ -5,7 +5,7 @@
  * Copyright (C) 1997-2006  Andy Bay <IMarvinTPA@bigfoot.com>
  * Copyright (C) 2006-2008  O. Sezer <sezero@users.sourceforge.net>
  *
- * $Id: utilslib.c,v 1.9 2011-07-15 09:20:09 sezero Exp $
+ * $Id: utilslib.c,v 1.10 2011-07-15 09:23:10 sezero Exp $
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -52,6 +52,11 @@
 #include "utilslib.h"
 
 /*============================================================================*/
+
+#if defined(__DJGPP__) && (__DJGPP_MINOR__ < 4)
+/* DJGPP < v2.04 doesn't have [v]snprintf().  */
+#include "djlib/vsnprntf.c"
+#endif	/* __DJGPP_MINOR__ < 4 */
 
 int q_vsnprintf(char *str, size_t size, const char *format, va_list args)
 {
