@@ -5,7 +5,7 @@
  * Copyright (C) 1997-2006  Andy Bay <IMarvinTPA@bigfoot.com>
  * Copyright (C) 2006-2008  O. Sezer <sezero@users.sourceforge.net>
  *
- * $Id: utilslib.c,v 1.10 2011-07-15 09:23:10 sezero Exp $
+ * $Id: utilslib.c,v 1.11 2011-07-15 16:55:17 sezero Exp $
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -103,9 +103,9 @@ char *q_strrev (char *str)
 
 	b = e = str;
 
-	while (*e)
-		e++;
-	e--;
+	while (*e++)
+		;
+	e -= 2;
 
 	while ( b < e )
 	{
