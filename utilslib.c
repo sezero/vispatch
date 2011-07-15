@@ -5,7 +5,7 @@
  * Copyright (C) 1997-2006  Andy Bay <IMarvinTPA@bigfoot.com>
  * Copyright (C) 2006-2008  O. Sezer <sezero@users.sourceforge.net>
  *
- * $Id: utilslib.c,v 1.8 2011-02-18 07:50:08 sezero Exp $
+ * $Id: utilslib.c,v 1.9 2011-07-15 09:20:09 sezero Exp $
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -132,57 +132,43 @@ void Error (const char *error, ...)
 
 #if defined(PLATFORM_WINDOWS)
 
-static HANDLE  findhandle;
+static HANDLE findhandle = INVALID_HANDLE_VALUE;
 static WIN32_FIND_DATA finddata;
-
-char *Sys_FindNextFile (void)
-{
-	BOOL	retval;
-
-	if (!findhandle || findhandle == INVALID_HANDLE_VALUE)
-		return NULL;
-
-	retval = FindNextFile(findhandle,&finddata);
-	while (retval)
-	{
-		if (finddata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-		{
-			retval = FindNextFile(findhandle, &finddata);
-			continue;
-		}
-
-		return finddata.cFileName;
-	}
-
-	return NULL;
-}
 
 char *Sys_FindFirstFile (const char *path, const char *pattern)
 {
 	char	tmp_buf[256];
-
-	if (findhandle)
+	if (findhandle != INVALID_HANDLE_VALUE)
 		Error ("Sys_FindFirst without FindClose");
-
 	q_snprintf (tmp_buf, sizeof(tmp_buf), "%s/%s", path, pattern);
 	findhandle = FindFirstFile(tmp_buf, &finddata);
+	if (findhandle == INVALID_HANDLE_VALUE)
+		return NULL;
+	if (finddata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+		return Sys_FindNextFile();
+	return finddata.cFileName;
+}
 
-	if (findhandle != INVALID_HANDLE_VALUE)
+char *Sys_FindNextFile (void)
+{
+	if (findhandle == INVALID_HANDLE_VALUE)
+		return NULL;
+	while (FindNextFile(findhandle, &finddata) != 0)
 	{
 		if (finddata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-			return Sys_FindNextFile();
-		else
-			return finddata.cFileName;
+			continue;
+		return finddata.cFileName;
 	}
-
 	return NULL;
 }
 
 void Sys_FindClose (void)
 {
 	if (findhandle != INVALID_HANDLE_VALUE)
+	{
 		FindClose(findhandle);
-	findhandle = NULL;
+		findhandle = INVALID_HANDLE_VALUE;
+	}
 }
 
 int Sys_filesize (const char *filename)
@@ -285,34 +271,8 @@ static struct dirent	*finddata;
 static char		*findpath, *findpattern;
 static char		matchpath[256];
 
-char *Sys_FindNextFile (void)
-{
-	struct stat	test;
-
-	if (!finddir)
-		return NULL;
-
-	do {
-		finddata = readdir(finddir);
-		if (finddata != NULL)
-		{
-			if (!fnmatch (findpattern, finddata->d_name, FNM_PATHNAME))
-			{
-				q_snprintf(matchpath, sizeof(matchpath), "%s/%s", findpath, finddata->d_name);
-				if ( (stat(matchpath, &test) == 0)
-							&& S_ISREG(test.st_mode) )
-					return finddata->d_name;
-			}
-		}
-	} while (finddata != NULL);
-
-	return NULL;
-}
-
 char *Sys_FindFirstFile (const char *path, const char *pattern)
 {
-	size_t	tmp_len;
-
 	if (finddir)
 		Error ("Sys_FindFirst without FindClose");
 
@@ -320,38 +280,69 @@ char *Sys_FindFirstFile (const char *path, const char *pattern)
 	if (!finddir)
 		return NULL;
 
-	tmp_len = strlen (pattern);
-	findpattern = (char *) calloc (tmp_len + 1, sizeof(char));
+	findpattern = strdup (pattern);
 	if (!findpattern)
-		return NULL;
-	strcpy (findpattern, pattern);
-	tmp_len = strlen (path);
-	findpath = (char *) calloc (tmp_len + 1, sizeof(char));
-	if (!findpath)
-		return NULL;
-	strcpy (findpath, path);
-	if (tmp_len)
 	{
-		--tmp_len;
-		/* searching / won't be a good idea, for example.. */
-		if (findpath[tmp_len] == '/' || findpath[tmp_len] == '\\')
-			findpath[tmp_len] = '\0';
+		Sys_FindClose();
+		return NULL;
+	}
+
+	findpath = strdup (path);
+	if (!findpath)
+	{
+		Sys_FindClose();
+		return NULL;
+	}
+
+	if (*findpath != '\0')
+	{
+	/* searching under "/" won't be a good idea, for example.. */
+		size_t siz = strlen(findpath) - 1;
+		if (findpath[siz] == '/' || findpath[siz] == '\\')
+			findpath[siz] = '\0';
 	}
 
 	return Sys_FindNextFile();
 }
 
+char *Sys_FindNextFile (void)
+{
+	struct stat	test;
+
+	if (!finddir)
+		return NULL;
+
+	while ((finddata = readdir(finddir)) != NULL)
+	{
+		if (!fnmatch (findpattern, finddata->d_name, FNM_PATHNAME))
+		{
+			q_snprintf(matchpath, sizeof(matchpath), "%s/%s", findpath, finddata->d_name);
+			if ( (stat(matchpath, &test) == 0)
+						&& S_ISREG(test.st_mode))
+				return finddata->d_name;
+		}
+	}
+
+	return NULL;
+}
+
 void Sys_FindClose (void)
 {
 	if (finddir != NULL)
+	{
 		closedir(finddir);
+		finddir = NULL;
+	}
 	if (findpath != NULL)
+	{
 		free (findpath);
+		findpath = NULL;
+	}
 	if (findpattern != NULL)
+	{
 		free (findpattern);
-	finddir = NULL;
-	findpath = NULL;
-	findpattern = NULL;
+		findpattern = NULL;
+	}
 }
 
 int Sys_filesize (const char *filename)
