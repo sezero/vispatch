@@ -2,7 +2,7 @@
 	q_stdinc.h
 	includes the minimum necessary stdc headers,
 
-	$Id: q_stdinc.h,v 1.5 2009-01-30 23:10:04 sezero Exp $
+	$Id: q_stdinc.h,v 1.6 2011-07-17 08:25:29 sezero Exp $
 
 	Copyright (C) 1996-1997  Id Software, Inc.
 	Copyright (C) 2007-2008  O.Sezer <sezero@users.sourceforge.net>
@@ -34,18 +34,14 @@
 #include <limits.h>
 
 #if 0	/* not used for now */
-#if defined(_MSC_VER)
-#include "msinttypes/stdint.h"
-#else	/* not M$ compiler: */
-#include <stdint.h>
-#endif
+#include "q_stdint.h"
 #endif	/* not used for now */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
-#if !(defined(_WIN32) || defined(_WIN64))
+#if !defined(_WIN32)
 #include <strings.h>	/* strcasecmp and strncasecmp	*/
 #endif	/* ! PLATFORM_WINDOWS */
 
@@ -78,16 +74,6 @@ COMPILE_TIME_ASSERT(short, sizeof(short) == 2);
 #define offsetof(t,m) ((size_t)&(((t *)0)->m))
 #endif
 
-
-/*==========================================================================*/
-
-#if defined(_MSC_VER)
-#if defined(_WIN64)
-#define ssize_t	SSIZE_T
-#else
-typedef int	ssize_t;
-#endif	/* _WIN64 */
-#endif	/* _MSC_VER */
 
 /*==========================================================================*/
 
