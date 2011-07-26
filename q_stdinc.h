@@ -2,7 +2,7 @@
 	q_stdinc.h
 	includes the minimum necessary stdc headers,
 
-	$Id: q_stdinc.h,v 1.6 2011-07-17 08:25:29 sezero Exp $
+	$Id: q_stdinc.h,v 1.7 2011-07-26 14:01:29 sezero Exp $
 
 	Copyright (C) 1996-1997  Id Software, Inc.
 	Copyright (C) 2007-2008  O.Sezer <sezero@users.sourceforge.net>
@@ -33,11 +33,12 @@
 #include <stddef.h>
 #include <limits.h>
 
-#if 0	/* not used for now */
-#include "q_stdint.h"
-#endif	/* not used for now */
-
 #include <stdio.h>
+
+#if 0
+#include "q_stdint.h"
+#endif
+
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
