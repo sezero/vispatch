@@ -3,9 +3,9 @@
  *
  * Copyright (C) 1996-1997  Id Software, Inc.
  * Copyright (C) 1997-2006  Andy Bay <IMarvinTPA@bigfoot.com>
- * Copyright (C) 2006-2008  O. Sezer <sezero@users.sourceforge.net>
+ * Copyright (C) 2006-2011  O. Sezer <sezero@users.sourceforge.net>
  *
- * $Id: utilslib.c,v 1.12 2011-07-26 14:01:29 sezero Exp $
+ * $Id: utilslib.c,v 1.13 2011-10-08 12:33:03 sezero Exp $
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -403,7 +403,8 @@ int Sys_getcwd (char *buf, size_t size)
 #endif	/* ENDIAN_ASSUMED_UNSAFE */
 
 
-int host_byteorder;
+int	host_byteorder;
+int	host_bigendian;	/* bool */
 
 int DetectByteorder (void)
 {
@@ -460,6 +461,7 @@ int	(*LittleLong) (int);
 void ByteOrder_Init (void)
 {
 	host_byteorder = DetectByteorder ();
+	host_bigendian = (host_byteorder == BIG_ENDIAN);
 
 #if ENDIAN_RUNTIME_DETECT
 	switch (host_byteorder)

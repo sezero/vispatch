@@ -2,10 +2,10 @@
 	q_stdinc.h
 	includes the minimum necessary stdc headers,
 
-	$Id: q_stdinc.h,v 1.7 2011-07-26 14:01:29 sezero Exp $
+	$Id: q_stdinc.h,v 1.8 2011-10-08 12:33:03 sezero Exp $
 
 	Copyright (C) 1996-1997  Id Software, Inc.
-	Copyright (C) 2007-2008  O.Sezer <sezero@users.sourceforge.net>
+	Copyright (C) 2007-2011  O.Sezer <sezero@users.sourceforge.net>
 
 	This program is free software; you can redistribute it and/or
 	modify it under the terms of the GNU General Public License

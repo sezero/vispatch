@@ -2,9 +2,9 @@
 	compiler.h
 	compiler specific definitions and settings
 
-	$Id: compiler.h,v 1.5 2009-01-25 16:18:07 sezero Exp $
+	$Id: compiler.h,v 1.6 2011-10-08 12:33:03 sezero Exp $
 
-	Copyright (C) 2007  O.Sezer <sezero@users.sourceforge.net>
+	Copyright (C) 2007-2011  O.Sezer <sezero@users.sourceforge.net>
 
 	This program is free software; you can redistribute it and/or
 	modify it under the terms of the GNU General Public License

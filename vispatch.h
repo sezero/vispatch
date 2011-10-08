@@ -2,9 +2,9 @@
  * VisPatch :  Quake level patcher for water visibility.
  *
  * Copyright (C) 1997-2006  Andy Bay <IMarvinTPA@bigfoot.com>
- * Copyright (C) 2006-2009  O. Sezer <sezero@users.sourceforge.net>
+ * Copyright (C) 2006-2011  O. Sezer <sezero@users.sourceforge.net>
  *
- * $Id: vispatch.h,v 1.4 2009-02-03 21:50:01 sezero Exp $
+ * $Id: vispatch.h,v 1.5 2011-10-08 12:33:03 sezero Exp $
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License

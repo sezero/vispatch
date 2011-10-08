@@ -2,10 +2,10 @@
 	q_endian.h
 	endianness handling
 
-	$Id: q_endian.h,v 1.4 2011-02-18 07:10:02 sezero Exp $
+	$Id: q_endian.h,v 1.5 2011-10-08 12:33:03 sezero Exp $
 
 	Copyright (C) 1996-1997  Id Software, Inc.
-	Copyright (C) 2007-2008  O.Sezer <sezero@users.sourceforge.net>
+	Copyright (C) 2007-2011  O.Sezer <sezero@users.sourceforge.net>
 
 	This program is free software; you can redistribute it and/or
 	modify it under the terms of the GNU General Public License
@@ -37,13 +37,12 @@
 
 #undef ENDIAN_GUESSED_SAFE
 #undef ENDIAN_ASSUMED_UNSAFE
-#undef ENDIAN_RUNTIME_DETECT
 
+#undef ENDIAN_RUNTIME_DETECT
 /* if you want to detect byte order at runtime
  * instead of compile time, define this as 1 :
  */
 #define	ENDIAN_RUNTIME_DETECT		0
-
 
 #include <sys/types.h>
 
@@ -77,7 +76,7 @@
 #else
 #define	PDP_ENDIAN	3412
 #endif
-#endif	/* the NUXI endian, not supported actually.. */
+#endif	/* NUXI endian (not supported) */
 
 #if defined(__LITTLE_ENDIAN) && !defined(LITTLE_ENDIAN)
 #define	LITTLE_ENDIAN	__LITTLE_ENDIAN
@@ -124,10 +123,14 @@
 #	define	BYTE_ORDER	BIG_ENDIAN
 #   endif
 
-# elif defined(__i386) || defined(__i386__) ||	/* any x86 */	\
-       defined(_M_IX86) ||					\
-       defined(__amd64) || defined(__x86_64__)	/* any x64 */
-#	define	BYTE_ORDER	LITTLE_ENDIAN
+# elif defined(__i386) || defined(__i386__) || defined(__386__) || defined(_M_IX86)
+#	define	BYTE_ORDER	LITTLE_ENDIAN	/* any x86 */
+
+# elif defined(__amd64) || defined(__x86_64__) || defined(_M_X64)
+#	define	BYTE_ORDER	LITTLE_ENDIAN	/* any x64 */
+
+# elif defined(_M_IA64)
+#	define	BYTE_ORDER	LITTLE_ENDIAN	/* ia64 / Visual C */
 
 # elif defined (__ppc__) || defined(__POWERPC__) || defined(_M_PPC)
 #	define	BYTE_ORDER	BIG_ENDIAN	/* PPC: big endian */
@@ -162,7 +165,8 @@
 #endif	/* fallback. */
 
 
-extern int host_byteorder;
+extern int	host_byteorder;
+extern int	host_bigendian;		/* bool */
 extern int DetectByteorder (void);
 extern void ByteOrder_Init (void);
 
