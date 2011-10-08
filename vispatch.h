@@ -4,7 +4,7 @@
  * Copyright (C) 1997-2006  Andy Bay <IMarvinTPA@bigfoot.com>
  * Copyright (C) 2006-2011  O. Sezer <sezero@users.sourceforge.net>
  *
- * $Id: vispatch.h,v 1.5 2011-10-08 12:33:03 sezero Exp $
+ * $Id: vispatch.h,v 1.6 2011-10-08 14:15:02 sezero Exp $
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -31,7 +31,7 @@
 /* Version numbers */
 #define	VP_VER_MAJ	1
 #define	VP_VER_MID	4
-#define	VP_VER_MIN	5
+#define	VP_VER_MIN	6
 
 /* NOTE: We actually need int32_t, not int, as the types
    for sizes and offsets. If someone ever wants to compile
