@@ -1,5 +1,5 @@
 # GNU Makefile for vispatch 32 bit DOS binaries using GCC (DJGPP).
-# $Id: makefile.djgpp,v 1.4 2011-07-26 14:01:28 sezero Exp $
+# $Id: makefile.djgpp,v 1.5 2011-10-08 14:10:04 sezero Exp $
 
 CC ?= gcc
 
@@ -22,5 +22,5 @@ vispatch.exe: $(OBJECTS)
 	$(CC) -o $@ $(OBJECTS) $(LDFLAGS)
 
 clean:
-	rm -f *.o *.d
+	rm -f *.o *.res *.d
 

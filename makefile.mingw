@@ -1,12 +1,14 @@
 # GNU Makefile for vispatch windows binaries using GCC (MinGW).
-# $Id: makefile.mingw,v 1.4 2011-07-15 09:33:49 sezero Exp $
+# $Id: makefile.mingw,v 1.5 2011-10-08 14:10:04 sezero Exp $
 
 CC ?= gcc
+WINDRES ?= windres
 
 OBJECTS:= utilslib.o \
 	strlcat.o \
 	strlcpy.o \
-	vispatch.o
+	vispatch.o \
+	vispatch.res
 
 OPTIMIZATIONS= -O2
 
@@ -18,9 +20,17 @@ all: vispatch.exe
 .c.o:
 	$(CC) $(CFLAGS) -c $*.c
 
+# the program name is vispatch.exe and "patch" keyword is red-flagged
+# by Windows Vista and newer to trigger UAC for X86 applications.
+# So we need a manifest to set requestedExecutionLevel as "asInvoker"
+# and uiAccess as "false".  Not needed for AMD64, but doesn't hurt,
+# either.
+vispatch.res: vispatch.rc vispatch.exe.manifest
+	$(WINDRES) -DWIN32_LEAN_AND_MEAN --output-format=coff -o $@ $<
+
 vispatch.exe: $(OBJECTS)
 	$(CC) -o $@ $(OBJECTS) $(LDFLAGS)
 
 clean:
-	rm -f *.o *.d
+	rm -f *.o *.res *.d
 
