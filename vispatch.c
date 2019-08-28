@@ -77,7 +77,6 @@ do {								\
 		fclose(fVIS);					\
 } while (0)
 
-
 #define FWRITE_ERROR						\
 do {								\
 	CLOSE_ALL;						\
@@ -155,7 +154,7 @@ static void usage (void)
  */
 int	_CRT_glob = 0;
 
-#endif		/* __MINGW32__ */
+#endif	/* __MINGW32__ */
 
 
 static const char authors[] = "Andy Bay, O. Sezer";
@@ -960,7 +959,7 @@ static int BSPNew (int InitOFFS)
 	if (len > -1)
 		fseek(fVIS, 0, SEEK_END);
 
-	test = fwrite(&VisName, 1, VISPATCH_IDLEN, fVIS);
+	test = fwrite(VisName, 1, VISPATCH_IDLEN, fVIS);
 	if (test != VISPATCH_IDLEN)
 		return -1;
 
