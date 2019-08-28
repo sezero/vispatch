@@ -5,8 +5,6 @@
  * Copyright (C) 1997-2006  Andy Bay <IMarvinTPA@bigfoot.com>
  * Copyright (C) 2006-2011  O. Sezer <sezero@users.sourceforge.net>
  *
- * $Id: utilslib.c,v 1.13 2011-10-08 12:33:03 sezero Exp $
- *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2

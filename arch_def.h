@@ -6,8 +6,6 @@
 	- shouldn't depend on compiler.h, q_stdinc.h, or
 	  any other headers
 
-	$Id: arch_def.h,v 1.2 2011-10-08 12:33:03 sezero Exp $
-
 	Copyright (C) 2007-2011  O.Sezer <sezero@users.sourceforge.net>
 
 	This program is free software; you can redistribute it and/or

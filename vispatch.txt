@@ -1,4 +1,3 @@
-
 VisPatch, version 1.4.6
 
 -----------------------------------------------------------------
@@ -39,9 +38,7 @@ The (latest) website for WaterVIS:
   http://www.inside3d.com/qip/vispatch/
 
 The patch data file downloads:
-  http://www.inside3d.com/qip/vispatch/files.htm
-  3ddownloads mirror:
-  http://www.atomicgamer.com/directory.php?id=3138
+  https://www.quake-info-pool.net/vispatch/
 
 
 -----------------------------------------------------------------
@@ -109,13 +106,10 @@ vispatch -dir hipnotic -extract
 COPYRIGHT
 
   Copyright (C) 1997-2006  Andy Bay <IMarvinTPA@bigfoot.com>
-  Copyright (C) 2006-2011  O.Sezer <sezero@users.sourceforge.net>
+  Copyright (C) 2006-2011  O. Sezer <sezero@users.sourceforge.net>
 
   VisPatch is free software;  you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published
   by the Free Software Foundation;  either version 2, or (at your
   option) any later version.  See the accompanying COPYING file for
   details.
-
-  $Id: vispatch.txt,v 1.9 2011-10-08 14:15:02 sezero Exp $
-

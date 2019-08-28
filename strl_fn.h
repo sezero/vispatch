@@ -1,8 +1,6 @@
 /*
 	strl_fn.h
 	header file for BSD strlcat and strlcpy
-
-	$Id: strl_fn.h,v 1.2 2008-01-18 09:57:01 sezero Exp $
 */
 
 #ifndef __STRLFUNCS_H

@@ -1,5 +1,4 @@
 # GNU Makefile for vispatch windows binaries using GCC (MinGW).
-# $Id: makefile.mingw,v 1.5 2011-10-08 14:10:04 sezero Exp $
 
 CC ?= gcc
 WINDRES ?= windres

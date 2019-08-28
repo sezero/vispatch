@@ -1,5 +1,4 @@
 # GNU Makefile for vispatch binaries using GCC.
-# $Id: makefile,v 1.4 2011-10-08 14:10:04 sezero Exp $
 
 CC ?= gcc
 

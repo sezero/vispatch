@@ -4,8 +4,6 @@
  * Copyright (C) 1997-2006  Andy Bay <IMarvinTPA@bigfoot.com>
  * Copyright (C) 2006-2011  O. Sezer <sezero@users.sourceforge.net>
  *
- * $Id: vispatch.c,v 1.13 2011-10-08 12:33:03 sezero Exp $
- *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
@@ -141,7 +139,7 @@ static void usage (void)
 
 /*============================================================================*/
 
-#if (defined(__MINGW32__) || defined(__MINGW64__))
+#if defined(__MINGW32__)
 
 /* From MinGW runtime/init.c :
  * [...] GetMainArgs (used below) takes a fourth argument
@@ -157,7 +155,7 @@ static void usage (void)
  */
 int	_CRT_glob = 0;
 
-#endif	/* __MINGW32__ / __MINGW64__ */
+#endif		/* __MINGW32__ */
 
 
 static const char authors[] = "Andy Bay, O. Sezer";
