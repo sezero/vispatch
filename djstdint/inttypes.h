@@ -1,10 +1,17 @@
 /* Hacked from DJGPP v2.04 for use with older DJGPP versions */
 
+/* Copyright (C) 2013 DJ Delorie, see COPYING.DJ for details */
 /* Copyright (C) 2003 DJ Delorie, see COPYING.DJ for details */
 /* Copyright (C) 2002 DJ Delorie, see COPYING.DJ for details */
+
 #ifndef __dj_inttypes__h_
 #define __dj_inttypes__h_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/* Get the type definitions.  */
 #include <stdint.h>
 
 /* ANSI/ISO C99 says these should not be visible in C++ unless
@@ -179,13 +186,7 @@
 
 #endif /* !__cplusplus || __STDC_FORMAT_MACROS */
 
-/* we don't need the functions below.
- * when/if we do, enable the prototypes and implement them... */
-/*
-#ifdef __cplusplus
-extern "C" {
-#endif
-
+#if 0 /* don't need the intmax functions below */
 typedef struct {
   intmax_t quot;
   intmax_t rem;
@@ -195,10 +196,10 @@ intmax_t imaxabs (intmax_t _j);
 imaxdiv_t imaxdiv (intmax_t _numer, intmax_t _denom);
 intmax_t strtoimax (const char *_nptr, char **_endptr, int _base);
 uintmax_t strtoumax (const char *_nptr, char **_endptr, int _base);
+#endif /* if 0 */
 
 #ifdef __cplusplus
 }
 #endif
-*/
 
 #endif /* __dj_inttypes__h_ */
