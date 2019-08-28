@@ -35,9 +35,6 @@ Homepage of Andy Bay, the original author:
   http://www.imarvintpa.com/
 
 The (latest) website for WaterVIS:
-  http://www.inside3d.com/qip/vispatch/
-
-The patch data file downloads:
   https://www.quake-info-pool.net/vispatch/
 
 
