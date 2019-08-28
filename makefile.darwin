@@ -1,0 +1,52 @@
+# GNU Makefile for Mac OS X
+
+ifeq ($(CROSS),)
+CC=gcc
+else
+CC=$(CROSS)-gcc
+endif
+LD = $(CC)
+
+OBJECTS:= utilslib.o \
+	strlcat.o \
+	strlcpy.o \
+	vispatch.o
+
+OPTIMIZATIONS= -O2
+
+CFLAGS = -Wall -W -Wshadow $(OPTIMIZATIONS)
+# -g
+LDFLAGS=
+
+# require 10.5 for 64 bit builds
+ifeq ($(MACH_TYPE),x86_64)
+CFLAGS +=-mmacosx-version-min=10.5
+LDFLAGS+=-mmacosx-version-min=10.5
+endif
+ifeq ($(MACH_TYPE),ppc64)
+CFLAGS +=-mmacosx-version-min=10.5
+LDFLAGS+=-mmacosx-version-min=10.5
+endif
+# require 10.2 for ppc builds
+ifeq ($(MACH_TYPE),ppc)
+CFLAGS +=-mmacosx-version-min=10.2
+LDFLAGS+=-mmacosx-version-min=10.2
+endif
+# require 10.2 for x86 builds
+ifeq ($(MACH_TYPE),x86)
+CFLAGS +=-mmacosx-version-min=10.4
+LDFLAGS+=-mmacosx-version-min=10.4
+endif
+
+all: vispatch
+
+.c.o:
+	$(CC) $(CFLAGS) -c $*.c
+
+vispatch: $(OBJECTS)
+	$(LD) -o $@ $(OBJECTS) $(LDFLAGS)
+
+clean:
+	rm -f *.o *.res *.d
+distclean: clean
+	rm -f vispatch
