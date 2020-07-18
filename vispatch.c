@@ -161,7 +161,7 @@ static const char authors[] = "Andy Bay, O. Sezer";
 
 int main (int argc, char **argv)
 {
-	int	ret = 0, tmp;
+	int	ret = 0, tmp, len;
 	const char	*testname;
 
 	printf("VisPatch %d.%d.%d by %s\n",
@@ -170,66 +170,62 @@ int main (int argc, char **argv)
 
 	ValidateByteorder ();
 
-	if (argc > 1)
-	{
-		for (tmp = 1; tmp < argc; tmp++)
-		{
-			if (argv[tmp][0] == '/')
-				argv[tmp][0] = '-';
-
-			q_strlwr(argv[tmp]);
-			if (strcmp(argv[tmp], "-?"    ) == 0 ||
-			    strcmp(argv[tmp], "-h"    ) == 0 ||
-			    strcmp(argv[tmp], "-help" ) == 0 ||
-			    strcmp(argv[tmp], "--help") == 0 )
-			{
-				usage();
-				exit (0);
-			}
-		}
-	}
-
 	if (Sys_getcwd(Path,sizeof(Path)) != 0)
 		Error ("Unable to determine current working directory");
 	printf("Current directory: %s\n", Path);
 
 	if (argc > 1)
 	{
+		char cmdbuffer[256];
 		for (tmp = 1; tmp < argc; tmp++)
 		{
-			if (argv[tmp][0] == '-')
+			q_strlcpy(cmdbuffer, argv[tmp], sizeof(cmdbuffer));
+			q_strlwr(cmdbuffer);
+			if (cmdbuffer[0] == '/')
 			{
-				if (strcmp(argv[tmp],"-data") == 0)
-				{
-					argv[tmp][0] = 0;
-					if (++tmp == argc)
-						Error ("You must specify the filename of visdata after -data");
-					q_strlcpy (VIS, argv[tmp], sizeof(VIS));
-					argv[tmp][0] = 0;
-				}
-				else if (strcmp(argv[tmp],"-dir") == 0)
-				{
-					argv[tmp][0] = 0;
-					if (++tmp == argc)
-						Error ("You must specify a directory name after -dir");
-					q_strlcpy (Path, argv[tmp], sizeof(Path));
-					argv[tmp][0] = 0;
-					printf("Will look into %s as the pak/bsp directory..\n", Path);
-				}
-				else if (strcmp(argv[tmp],"-extract") == 0)
-				{
-					if (mode == 2)
-						Error ("-extract and -new cannot be used together");
-					mode = 1;
-					argv[tmp][0] = 0;
-				}
-				else if (strcmp(argv[tmp],"-new") == 0)
-				{
-					if (mode == 1)
-						Error ("-extract and -new cannot be used together");
-					mode = 2;
-					argv[tmp][0] = 0;
-				}
+				cmdbuffer[0] = '-';
+			}
+			if (strcmp(cmdbuffer, "-?"    ) == 0 ||
+			    strcmp(cmdbuffer, "-h"    ) == 0 ||
+			    strcmp(cmdbuffer, "-help" ) == 0 ||
+			    strcmp(cmdbuffer, "--help") == 0 )
+			{
+				usage();
+				exit (0);
+			}
+			else if (strcmp(cmdbuffer,"-data") == 0)
+			{
+				argv[tmp][0] = 0;
+				if (++tmp == argc)
+					Error ("You must specify the filename of visdata after -data");
+				q_strlcpy (VIS, argv[tmp], sizeof(VIS));
+				argv[tmp][0] = 0;
+			}
+			else if (strcmp(cmdbuffer,"-dir") == 0)
+			{
+				argv[tmp][0] = 0;
+				if (++tmp == argc)
+					Error ("You must specify a directory name after -dir");
+				q_strlcpy (Path, argv[tmp], sizeof(Path));
+				len = (int)strlen(Path) - 1;
+				if (Path[len] == '/' || Path[len] == '\\')
+					Path[len] = 0;
+				argv[tmp][0] = 0;
+				printf("Will look into %s as the pak/bsp directory..\n", Path);
+			}
+			else if (strcmp(cmdbuffer,"-extract") == 0)
+			{
+				if (mode == 2)
+					Error ("-extract and -new cannot be used together");
+				mode = 1;
+				argv[tmp][0] = 0;
+			}
+			else if (strcmp(cmdbuffer,"-new") == 0)
+			{
+				if (mode == 1)
+					Error ("-extract and -new cannot be used together");
+				mode = 2;
+				argv[tmp][0] = 0;
 			}
 			else
 			{
@@ -240,6 +236,7 @@ int main (int argc, char **argv)
 
 	printf("VisPatch is in mode %i\n", mode);
 	printf("Will use %s as the Vis-data source\n", VIS);
+	printf("Will patch files matching %s/%s\n", Path, File);
 	if (mode == 1)
 	{
 		printf("Will extract Vis data to %s, auto-append.\n", VIS);
