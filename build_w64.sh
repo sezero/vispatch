@@ -39,5 +39,5 @@ freebsd|openbsd|netbsd)
 	;;
 esac
 
-exec $MAKE_CMD -f makefile.mingw $*
+exec $MAKE_CMD -f Makefile.mingw $*
 

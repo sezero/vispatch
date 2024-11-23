@@ -34,13 +34,6 @@
 #include <io.h>
 #include <direct.h>
 #endif	/* PLATFORM_WINDOWS */
-#if defined(PLATFORM_DOS)
-#include <unistd.h>
-#include <dos.h>
-#include <io.h>
-#include <dir.h>
-#include <fcntl.h>
-#endif	/* PLATFORM_DOS */
 #if defined(PLATFORM_UNIX)
 #include <unistd.h>
 #include <dirent.h>
@@ -51,14 +44,14 @@
 
 /*============================================================================*/
 
-#if defined(__DJGPP__) &&	\
-  (!defined(__DJGPP_MINOR__) || __DJGPP_MINOR__ < 4)
-/* DJGPP < v2.04 doesn't have [v]snprintf().  */
-/* to ensure a proper version check, include stdio.h
- * or go32.h which includes sys/version.h since djgpp
- * versions >= 2.02 and defines __DJGPP_MINOR__ */
-#include "djlib/vsnprntf.c"
-#endif	/* __DJGPP_MINOR__ < 4 */
+/* platform dependant (v)snprintf function names: */
+#if defined(PLATFORM_WINDOWS)
+#define	snprintf_func		_snprintf
+#define	vsnprintf_func		_vsnprintf
+#else
+#define	snprintf_func		snprintf
+#define	vsnprintf_func		vsnprintf
+#endif
 
 int q_vsnprintf(char *str, size_t size, const char *format, va_list args)
 {
@@ -68,7 +61,8 @@ int q_vsnprintf(char *str, size_t size, const char *format, va_list args)
 
 	if (ret < 0)
 		ret = (int)size;
-
+	if (size == 0)	/* no buffer */
+		return ret;
 	if ((size_t)ret >= size)
 		str[size - 1] = '\0';
 
@@ -87,13 +81,63 @@ int q_snprintf (char *str, size_t size, const char *format, ...)
 	return ret;
 }
 
+static inline int q_isupper(int c)
+{
+	return (c >= 'A' && c <= 'Z');
+}
+
+static inline int q_tolower(int c)
+{
+	return ((q_isupper(c)) ? (c | ('a' - 'A')) : c);
+}
+
+int q_strcasecmp(const char * s1, const char * s2)
+{
+	const char * p1 = s1;
+	const char * p2 = s2;
+	char c1, c2;
+
+	if (p1 == p2)
+		return 0;
+
+	do
+	{
+		c1 = q_tolower (*p1++);
+		c2 = q_tolower (*p2++);
+		if (c1 == '\0')
+			break;
+	} while (c1 == c2);
+
+	return (int)(c1 - c2);
+}
+
+int q_strncasecmp(const char *s1, const char *s2, size_t n)
+{
+	const char * p1 = s1;
+	const char * p2 = s2;
+	char c1, c2;
+
+	if (p1 == p2 || n == 0)
+		return 0;
+
+	do
+	{
+		c1 = q_tolower (*p1++);
+		c2 = q_tolower (*p2++);
+		if (c1 == '\0' || c1 != c2)
+			break;
+	} while (--n > 0);
+
+	return (int)(c1 - c2);
+}
+
 char *q_strlwr (char *str)
 {
 	char	*c;
 	c = str;
 	while (*c)
 	{
-		*c = tolower(*c);
+		*c = q_tolower(*c);
 		c++;
 	}
 	return str;
@@ -141,14 +185,14 @@ void Error (const char *error, ...)
 
 static HANDLE findhandle = INVALID_HANDLE_VALUE;
 static WIN32_FIND_DATA finddata;
+static char		findstr[256];
 
-char *Sys_FindFirstFile (const char *path, const char *pattern)
+const char *Sys_FindFirstFile (const char *path, const char *pattern)
 {
-	char	tmp_buf[256];
 	if (findhandle != INVALID_HANDLE_VALUE)
-		Error ("Sys_FindFirst without FindClose");
-	q_snprintf (tmp_buf, sizeof(tmp_buf), "%s/%s", path, pattern);
-	findhandle = FindFirstFile(tmp_buf, &finddata);
+		Error ("FindFirst without FindClose");
+	q_snprintf (findstr, sizeof(findstr), "%s/%s", path, pattern);
+	findhandle = FindFirstFile(findstr, &finddata);
 	if (findhandle == INVALID_HANDLE_VALUE)
 		return NULL;
 	if (finddata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
@@ -156,7 +200,7 @@ char *Sys_FindFirstFile (const char *path, const char *pattern)
 	return finddata.cFileName;
 }
 
-char *Sys_FindNextFile (void)
+const char *Sys_FindNextFile (void)
 {
 	if (findhandle == INVALID_HANDLE_VALUE)
 		return NULL;
@@ -199,74 +243,16 @@ int Sys_filesize (const char *filename)
 
 int Sys_getcwd (char *buf, size_t size)
 {
-	if (_getcwd(buf, size) == NULL)
+	const int sz = (int) size;
+
+	if (sz <= 0) return 0;
+	if (_getcwd(buf, sz) == NULL)
 		return 1;
 
 	return 0;
 }
 
 #endif	/* PLATFORM_WINDOWS */
-
-
-//============================================================================
-
-#if defined(PLATFORM_DOS)
-
-static struct ffblk	finddata;
-static int		findhandle = -1;
-
-char *Sys_FindFirstFile (const char *path, const char *pattern)
-{
-	char	tmp_buf[256];
-
-	if (findhandle == 0)
-		Error ("Sys_FindFirst without FindClose");
-
-	q_snprintf (tmp_buf, sizeof(tmp_buf), "%s/%s", path, pattern);
-	memset (&finddata, 0, sizeof(finddata));
-
-	findhandle = findfirst(tmp_buf, &finddata, FA_ARCH | FA_RDONLY);
-	if (findhandle == 0)
-		return finddata.ff_name;
-
-	return NULL;
-}
-
-char *Sys_FindNextFile (void)
-{
-	if (findhandle != 0)
-		return NULL;
-
-	if (findnext(&finddata) == 0)
-		return finddata.ff_name;
-
-	return NULL;
-}
-
-void Sys_FindClose (void)
-{
-	findhandle = -1;
-}
-
-int Sys_filesize (const char *filename)
-{
-	struct ffblk	f;
-
-	if (findfirst(filename, &f, FA_ARCH | FA_RDONLY) != 0)
-		return -1;
-
-	return (int) f.ff_fsize;
-}
-
-int Sys_getcwd (char *buf, size_t size)
-{
-	if (getcwd(buf, size) == NULL)
-		return 1;
-
-	return 0;
-}
-
-#endif	/* PLATFORM_DOS */
 
 
 //============================================================================
@@ -278,10 +264,10 @@ static struct dirent	*finddata;
 static char		*findpath, *findpattern;
 static char		matchpath[256];
 
-char *Sys_FindFirstFile (const char *path, const char *pattern)
+const char *Sys_FindFirstFile (const char *path, const char *pattern)
 {
 	if (finddir)
-		Error ("Sys_FindFirst without FindClose");
+		Error ("FindFirst without FindClose");
 
 	finddir = opendir (path);
 	if (!finddir)
@@ -312,7 +298,7 @@ char *Sys_FindFirstFile (const char *path, const char *pattern)
 	return Sys_FindNextFile();
 }
 
-char *Sys_FindNextFile (void)
+const char *Sys_FindNextFile (void)
 {
 	struct stat	test;
 
@@ -380,51 +366,45 @@ int Sys_getcwd (char *buf, size_t size)
 /*========== BYTE ORDER STUFF ================================================*/
 
 #if ENDIAN_RUNTIME_DETECT
-#define	__byteswap_func	static
+#define __byteswap_func static
 #else
-#define	__byteswap_func
-#endif	/* ENDIAN_RUNTIME_DETECT */
+#define __byteswap_func
+#endif
 
-#if ENDIAN_RUNTIME_DETECT
-/*
-# warning "Byte order will be detected at runtime"
-*/
-#elif defined(ENDIAN_ASSUMED_UNSAFE)
-# warning "Cannot determine byte order:"
-# if (ENDIAN_ASSUMED_UNSAFE == LITTLE_ENDIAN)
-#    warning "Using LIL endian as an UNSAFE default."
-# elif (ENDIAN_ASSUMED_UNSAFE == BIG_ENDIAN)
-#    warning "Using BIG endian as an UNSAFE default."
-# endif
-# warning "Revise the macros in q_endian.h for this"
-# warning "machine or use runtime detection !!!"
-#endif	/* ENDIAN_ASSUMED_UNSAFE */
+int host_byteorder;
+int host_bigendian; /* qboolean */
 
-
-int	host_byteorder;
-int	host_bigendian;	/* bool */
+FUNC_NOINLINE FUNC_NOCLONE
+unsigned int get_0x12345678 (void) {
+	return 0x12345678;
+	/*       U N I X  */
+}
 
 int DetectByteorder (void)
 {
-	int	i = 0x12345678;
-		/*    U N I X */
+	volatile union {
+		unsigned int i;
+		unsigned char c[4];
+	} bint;
+
+	bint.i = get_0x12345678 ();
 
 	/*
 	BE_ORDER:  12 34 56 78
-		   U  N  I  X
+	           U  N  I  X
 
 	LE_ORDER:  78 56 34 12
-		   X  I  N  U
+	           X  I  N  U
 
 	PDP_ORDER: 34 12 78 56
-		   N  U  X  I
+	           N  U  X  I
 	*/
 
-	if ( *(char *)&i == 0x12 )
+	if (bint.c[0] == 0x12)
 		return BIG_ENDIAN;
-	else if ( *(char *)&i == 0x78 )
+	if (bint.c[0] == 0x78)
 		return LITTLE_ENDIAN;
-	else if ( *(char *)&i == 0x34 )
+	if (bint.c[0] == 0x34)
 		return PDP_ENDIAN;
 
 	return -1;
@@ -451,10 +431,10 @@ int LongNoSwap (int l)
 	return l;
 }
 
-int	(*BigLong) (int);
-int	(*LittleLong) (int);
+int   (*BigLong) (int);
+int   (*LittleLong) (int);
 
-#endif	/* ENDIAN_RUNTIME_DETECT */
+#endif /* ENDIAN_RUNTIME_DETECT */
 
 void ByteOrder_Init (void)
 {
@@ -477,50 +457,56 @@ void ByteOrder_Init (void)
 	default:
 		break;
 	}
-#endif	/* ENDIAN_RUNTIME_DETECT */
+#endif /* ENDIAN_RUNTIME_DETECT */
 }
 
+/* call this from your main() */
 void ValidateByteorder (void)
 {
 	const char	*endianism[] = { "BE", "LE", "PDP", "Unknown" };
-	int		i;
+	const char	*tmp;
 
 	ByteOrder_Init ();
 	switch (host_byteorder)
 	{
 	case BIG_ENDIAN:
-		i = 0; break;
+		tmp = endianism[0];
+		break;
 	case LITTLE_ENDIAN:
-		i = 1; break;
+		tmp = endianism[1];
+		break;
 	case PDP_ENDIAN:
+		tmp = endianism[2];
 		host_byteorder = -1;	/* not supported */
-		i = 2; break;
+		break;
 	default:
-		i = 3; break;
+		tmp = endianism[3];
+		break;
 	}
 	if (host_byteorder < 0)
 		Error ("Unsupported byte order.");
-	/*
-	printf("Detected byte order: %s\n", endianism[i]);
-	*/
+//	printf("Detected byte order: %s\n", tmp);
 #if !ENDIAN_RUNTIME_DETECT
 	if (host_byteorder != BYTE_ORDER)
 	{
-		int		j;
+		const char	*tmp2;
 
 		switch (BYTE_ORDER)
 		{
 		case BIG_ENDIAN:
-			j = 0; break;
+			tmp2 = endianism[0];
+			break;
 		case LITTLE_ENDIAN:
-			j = 1; break;
+			tmp2 = endianism[1];
+			break;
 		case PDP_ENDIAN:
-			j = 2; break;
+			tmp2 = endianism[2];
+			break;
 		default:
-			j = 3; break;
+			tmp2 = endianism[3];
+			break;
 		}
-		Error ("Detected byte order %s doesn't match compiled %s order!",
-			endianism[i], endianism[j]);
+		Error ("Detected byte order %s doesn't match compiled %s order!", tmp, tmp2);
 	}
 #endif	/* ENDIAN_RUNTIME_DETECT */
 }

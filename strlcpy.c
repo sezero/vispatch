@@ -19,7 +19,6 @@
 #include <sys/types.h>
 #include <string.h>
 
-#include "arch_def.h"
 #include "strl_fn.h"
 
 /*
@@ -27,7 +26,7 @@
  * will be copied.  Always NUL terminates (unless siz == 0).
  * Returns strlen(src); if retval >= siz, truncation occurred.
  */
-#if !HAVE_STRLCPY
+
 size_t
 q_strlcpy (char *dst, const char *src, size_t siz)
 {
@@ -53,5 +52,4 @@ q_strlcpy (char *dst, const char *src, size_t siz)
 
 	return(s - src - 1);	/* count does not include NUL */
 }
-#endif
 

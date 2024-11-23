@@ -1,4 +1,4 @@
-VisPatch, version 1.4.6
+VisPatch, version 1.4.7
 
 -----------------------------------------------------------------
 
@@ -10,14 +10,14 @@ http://sourceforge.net/projects/vispatch/
 -----------------------------------------------------------------
 
 VisPatch is a tool for patching quake maps for transparent water
-in glquake. Original quake didn't have their maps water-vis'ed,
+in glquake. Original Quake didn't have their maps water-vis'ed,
 so people did that by themselves and prepared patch data files.
 This tool is used for preparing and applying those patch files.
 
 At the time this tool was written, re-vis'ing maps took a lot of
 time, but applying a vispatch took less than minutes, so this was
 a necessity.  Even today, if people don't want going into a
-'complex' job of vising, this tool comes as a great convenience
+tiresome job of vising, this tool comes as a great convenience
 because there are a lot of vispatch data files around.
 
 This is a revised version of Andy Bay's 1.2a source code for unix
@@ -103,7 +103,7 @@ vispatch -dir hipnotic -extract
 COPYRIGHT
 
   Copyright (C) 1997-2006  Andy Bay <IMarvinTPA@bigfoot.com>
-  Copyright (C) 2006-2011  O. Sezer <sezero@users.sourceforge.net>
+  Copyright (C) 2006-2024  O. Sezer <sezero@users.sourceforge.net>
 
   VisPatch is free software;  you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published

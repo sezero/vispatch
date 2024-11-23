@@ -41,5 +41,5 @@ linux)
 	;;
 esac
 
-exec $MAKE_CMD -f makefile.mingw $*
+exec $MAKE_CMD -f Makefile.mingw $*
 

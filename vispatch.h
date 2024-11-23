@@ -1,8 +1,7 @@
-/*
- * VisPatch :  Quake level patcher for water visibility.
+/* VisPatch :  Quake level patcher for water visibility.
  *
  * Copyright (C) 1997-2006  Andy Bay <IMarvinTPA@bigfoot.com>
- * Copyright (C) 2006-2011  O. Sezer <sezero@users.sourceforge.net>
+ * Copyright (C) 2006-2024  O. Sezer <sezero@users.sourceforge.net>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,13 +22,13 @@
  * Boston, MA  02110-1301  USA
 */
 
-#ifndef __QVISPATCH_H
-#define __QVISPATCH_H
+#ifndef QVISPATCH_H
+#define QVISPATCH_H
 
 /* Version numbers */
 #define	VP_VER_MAJ	1
 #define	VP_VER_MID	4
-#define	VP_VER_MIN	6
+#define	VP_VER_MIN	7
 
 /* NOTE: We actually need int32_t, not int, as the types
    for sizes and offsets. If someone ever wants to compile
@@ -76,7 +75,6 @@ typedef struct			// The BSP file header
 // on-disk pak file structures
 
 #define	MAX_FILES_IN_PACK	2048
-
 typedef struct
 {	char magic[4];		// Pak Name of the new WAD format
 	int	diroffset;	// Position of WAD directory from start of file
@@ -94,7 +92,6 @@ typedef struct
 // on-disk vis data structure:  stored in little endian format
 
 #define VISPATCH_IDLEN		32
-
 typedef struct
 {
 	char File[VISPATCH_IDLEN];
@@ -105,6 +102,4 @@ typedef struct
 	unsigned char	*leafdata;
 } visdat_t;
 
-
-#endif	/* __QVISPATCH_H */
-
+#endif	/* QVISPATCH_H */

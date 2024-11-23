@@ -2,7 +2,7 @@
  * VisPatch :  Quake level patcher for water visibility.
  *
  * Copyright (C) 1997-2006  Andy Bay <IMarvinTPA@bigfoot.com>
- * Copyright (C) 2006-2011  O. Sezer <sezero@users.sourceforge.net>
+ * Copyright (C) 2006-2024  O. Sezer <sezero@users.sourceforge.net>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -162,7 +162,7 @@ static const char authors[] = "Andy Bay, O. Sezer";
 int main (int argc, char **argv)
 {
 	int	ret = 0, tmp;
-	char	*testname;
+	const char	*testname;
 
 	printf("VisPatch %d.%d.%d by %s\n",
 			 VP_VER_MAJ, VP_VER_MID, VP_VER_MIN,
@@ -189,7 +189,7 @@ int main (int argc, char **argv)
 		}
 	}
 
-	if ( Sys_getcwd(Path,sizeof(Path)) != 0)
+	if (Sys_getcwd(Path,sizeof(Path)) != 0)
 		Error ("Unable to determine current working directory");
 	printf("Current directory: %s\n", Path);
 
@@ -212,8 +212,7 @@ int main (int argc, char **argv)
 					argv[tmp][0] = 0;
 					if (++tmp == argc)
 						Error ("You must specify a directory name after -dir");
-					q_strlcpy (Path, argv[tmp], sizeof(Path) - 1);
-					Path[sizeof(Path) - 1] = 0;
+					q_strlcpy (Path, argv[tmp], sizeof(Path));
 					argv[tmp][0] = 0;
 					printf("Will look into %s as the pak/bsp directory..\n", Path);
 				}
@@ -417,7 +416,7 @@ static int ChooseLevel (char *FileSpec, int Offset, int length)
 	int tmp = 0;
 
 //	printf("Looking at file %s %i %i.\n", FileSpec, length, mode);
-	if ( strstr(q_strlwr(FileSpec),".pak") )
+	if (strstr(q_strlwr(FileSpec),".pak"))
 	{
 		printf("Looking at file %s.\n", FileSpec);
 		usepak = 1;
@@ -518,11 +517,11 @@ static int OthrFix (int Offset, int Length)
 	void		*cpy;
 
 	fseek(InFile, Offset, SEEK_SET);
-	NewPakEnt[NPcnt].offset = LittleLong( ftell(OutFile) );
-	NewPakEnt[NPcnt].size = LittleLong( Length );
+	NewPakEnt[NPcnt].offset = LittleLong(ftell(OutFile));
+	NewPakEnt[NPcnt].size = LittleLong(Length);
 	cpy = malloc(Length);
 	fread(cpy, 1, Length, InFile);
-	test = fwrite(cpy, 1, Length, OutFile);
+	test = (int) fwrite(cpy, 1, Length, OutFile);
 	free(cpy);
 
 	if (test != Length)
@@ -541,10 +540,10 @@ static int BSPFix (int InitOFFS)
 	char	pad[4] = { 0, 0, 0, 0 };
 
 	fflush(OutFile);
-	NewPakEnt[NPcnt].offset = LittleLong( ftell(OutFile) );
+	NewPakEnt[NPcnt].offset = LittleLong(ftell(OutFile));
 	tmp = LittleLong(NewPakEnt[NPcnt].size);
 	if (tmp == 0)
-		NewPakEnt[NPcnt].size = LittleLong( Sys_filesize(File) );
+		NewPakEnt[NPcnt].size = LittleLong(Sys_filesize(File));
 
 	fseek(InFile, InitOFFS, SEEK_SET);
 	test = fread(&bspheader, 1, sizeof(dheader_t), InFile);
@@ -846,7 +845,7 @@ static int BSPFix (int InitOFFS)
 		return -1;
 
 	fseek(OutFile, here, SEEK_SET);
-	NewPakEnt[NPcnt].size = LittleLong( ftell(OutFile) - LittleLong(NewPakEnt[NPcnt].offset) );
+	NewPakEnt[NPcnt].size = LittleLong(ftell(OutFile) - LittleLong(NewPakEnt[NPcnt].offset));
 
 	return 1;
 }

@@ -1,0 +1,26 @@
+# Visual Studio makefile for Windows:
+# nmake -f Makefile.vc
+
+CC	= cl
+RC	= rc
+CFLAGS	= /O2 /W3 /MD /DWIN32 /D_CRT_SECURE_NO_WARNINGS
+LD	= link
+LDFLAGS	= /RELEASE
+EXE	= vispatch.exe
+
+OBJS	= utilslib.obj strlcat.obj strlcpy.obj vispatch.obj vispatch.res
+
+.c.obj:
+	@$(CC) /c /nologo $(CFLAGS) /Fo$*.obj $<
+.rc.res:
+	@$(RC) /Fo$*.res $<
+
+all: $(EXE)
+
+$(EXE): $(OBJS)
+	$(LD) $(LDFLAGS) /OUT:$(EXE) $(OBJS)
+
+clean:
+	-del *.obj
+	-del *.res
+	-del *.exe
