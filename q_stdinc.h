@@ -24,8 +24,8 @@
 		Boston, MA  02110-1301  USA
 */
 
-#ifndef __QSTDINC_H
-#define __QSTDINC_H
+#ifndef QSTDINC_H
+#define QSTDINC_H
 
 #include <sys/types.h>
 #include <stddef.h>
@@ -76,6 +76,39 @@ COMPILE_TIME_ASSERT(short, sizeof(short) == 2);
 
 /*==========================================================================*/
 
+/* MAX_OSPATH (max length of a filesystem pathname, i.e. PATH_MAX)
+ * Note: See GNU Hurd and others' notes about brokenness of this:
+ * http://www.gnu.org/software/hurd/community/gsoc/project_ideas/maxpath.html
+ * http://insanecoding.blogspot.com/2007/11/pathmax-simply-isnt.html */
 
-#endif	/* __QSTDINC_H */
+#if defined(__DJGPP__) || defined(_MSDOS) || defined(__MSDOS__) || defined(__DOS__)
+/* 256 is more than enough */
+#if !defined(PATH_MAX)
+#define PATH_MAX	256
+#endif
+#define MAX_OSPATH	256
+
+#else
+
+#if !defined(PATH_MAX)
+/* equivalent values? */
+#if defined(MAXPATHLEN)
+#define PATH_MAX	MAXPATHLEN
+#elif defined(_WIN32) && defined(_MAX_PATH)
+#define PATH_MAX	_MAX_PATH
+#elif defined(_WIN32) && defined(MAX_PATH)
+#define PATH_MAX	MAX_PATH
+#elif defined(__OS2__) && defined(CCHMAXPATH)
+#define PATH_MAX	CCHMAXPATH
+#else /* fallback */
+#define PATH_MAX	1024
+#endif
+#endif	/* PATH_MAX */
+
+#define MAX_OSPATH	PATH_MAX
+#endif	/* MAX_OSPATH */
+
+/*==========================================================================*/
+
+#endif	/* QSTDINC_H */
 

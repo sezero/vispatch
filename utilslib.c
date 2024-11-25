@@ -1,5 +1,4 @@
-/*
- * VisPatch :  Quake level patcher for water visibility.
+/* VisPatch :  Quake level patcher for water visibility.
  *
  * Copyright (C) 1996-1997  Id Software, Inc.
  * Copyright (C) 1997-2006  Andy Bay <IMarvinTPA@bigfoot.com>
@@ -185,7 +184,7 @@ void Error (const char *error, ...)
 
 static HANDLE findhandle = INVALID_HANDLE_VALUE;
 static WIN32_FIND_DATA finddata;
-static char		findstr[256];
+static char		findstr[MAX_OSPATH];
 
 const char *Sys_FindFirstFile (const char *path, const char *pattern)
 {
@@ -262,7 +261,7 @@ int Sys_getcwd (char *buf, size_t size)
 static DIR		*finddir;
 static struct dirent	*finddata;
 static char		*findpath, *findpattern;
-static char		matchpath[256];
+static char		matchpath[MAX_OSPATH];
 
 const char *Sys_FindFirstFile (const char *path, const char *pattern)
 {

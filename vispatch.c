@@ -39,13 +39,13 @@ static int		mode = 0;	/* 0: patch, 2: patch without overwriting, 1: extract	*/
 static FILE	*InFile, *OutFile, *fVIS;
 
 #define		TEMP_FILE_NAME		"~vistmp.tmp"
-static char	Path[256],	/* where we shall work: getcwd(), changed by -dir	*/
-		Path2[256],	/* temporary filename buffer				*/
-		TempFile[256],	/* name of our temporary file on disk			*/
-		VIS[256] = "vispatch.dat",	/* vis data filename. changed by -data	*/
-		FoutPak[256] = "pak*.pak",	/* name of the output pak file		*/
-		File[256] = "pak*.pak",		/* filename pattern we'll be globbing	*/
-		CurName[VISPATCH_IDLEN+6];	/* name of the currently processed file	*/
+static char	Path[MAX_OSPATH];	/* where we shall work: getcwd(), changed by -dir	*/
+static char	Path2[MAX_OSPATH];	/* temporary filename buffer				*/
+static char	TempFile[MAX_OSPATH];	/* name of our temporary file on disk			*/
+static char	VIS[MAX_OSPATH] = "vispatch.dat";	/* vis data filename. changed by -data	*/
+static char	FoutPak[MAX_OSPATH] = "pak*.pak";	/* name of the output pak file		*/
+static char	File[MAX_OSPATH] = "pak*.pak";		/* filename pattern we'll be globbing	*/
+static char	CurName[VISPATCH_IDLEN + 6];	/* name of the currently processed file.	*/
 
 
 /*============================================================================*/
@@ -176,10 +176,10 @@ int main (int argc, char **argv)
 
 	if (argc > 1)
 	{
-		char cmdbuffer[256];
+		char *cmdbuffer = TempFile;
 		for (tmp = 1; tmp < argc; tmp++)
 		{
-			q_strlcpy(cmdbuffer, argv[tmp], sizeof(cmdbuffer));
+			q_strlcpy(cmdbuffer, argv[tmp], MAX_OSPATH);
 			q_strlwr(cmdbuffer);
 			if (cmdbuffer[0] == '/')
 			{
